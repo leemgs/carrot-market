@@ -8,6 +8,10 @@
       "description": "watch 에 email 이 없을 때 사용할 기본 수신 이메일",
       "format": "email"
     },
+    "defaultChatMessage": {
+      "type": "string",
+      "description": "watch 에 chatMessage 가 없을 때 사용할 기본 채팅 인사말"
+    },
     "watches": {
       "type": "array",
       "items": {
@@ -30,6 +34,10 @@
             "type": "string",
             "description": "알림 수신 이메일. 없으면 defaultEmail 사용",
             "format": "email"
+          },
+          "chatMessage": {
+            "type": "string",
+            "description": "채팅 도우미에 미리 채워질 인사말. 없으면 defaultChatMessage 사용"
           },
           "enabled": {
             "type": "boolean",

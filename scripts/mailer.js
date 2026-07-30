@@ -11,6 +11,20 @@
 
 const nodemailer = require('nodemailer');
 
+// 빠른 채팅 도우미 페이지(GitHub Pages). CHAT_HELPER_URL 로 재정의 가능.
+const CHAT_HELPER_URL =
+  process.env.CHAT_HELPER_URL || 'https://leemgs.github.io/carrot-market/chat.html';
+
+// 매물별 "채팅 도우미" 링크 생성 (매물 주소 + 인사말 + 제목을 파라미터로 전달)
+function chatHelperLink(item, message) {
+  const q = new URLSearchParams({
+    url: item.url || '',
+    msg: message || '',
+    title: item.title || '',
+  });
+  return `${CHAT_HELPER_URL}?${q.toString()}`;
+}
+
 function createTransport() {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
@@ -32,11 +46,13 @@ function createTransport() {
  * @param {string} params.to            수신 이메일
  * @param {object} params.watch         {keyword, location}
  * @param {Array}  params.items         새로 발견된 매물 배열
+ * @param {string} [params.chatMessage] 채팅 도우미에 미리 채울 인사말
  */
-async function sendNewItemsEmail({ to, watch, items }) {
+async function sendNewItemsEmail({ to, watch, items, chatMessage }) {
   const transporter = createTransport();
   const fromName = process.env.MAIL_FROM_NAME || '당근마켓 알림';
   const from = `"${fromName}" <${process.env.GMAIL_USER}>`;
+  const message = chatMessage || '안녕하세요. 제가 구매 가능할까요?';
 
   const subject = `[당근마켓 알림] '${watch.keyword}' (${watch.location}) 신규 매물 ${items.length}건`;
 
@@ -44,12 +60,12 @@ async function sendNewItemsEmail({ to, watch, items }) {
     from,
     to,
     subject,
-    text: buildText(watch, items),
-    html: buildHtml(watch, items),
+    text: buildText(watch, items, message),
+    html: buildHtml(watch, items, message),
   });
 }
 
-function buildText(watch, items) {
+function buildText(watch, items, message) {
   const lines = [
     `당근마켓에 '${watch.keyword}' 키워드 / '${watch.location}' 지역의 신규 매물이 올라왔습니다.`,
     '',
@@ -58,10 +74,12 @@ function buildText(watch, items) {
     lines.push(`${i + 1}. ${it.title || '(제목 없음)'}`);
     if (it.price) lines.push(`   가격: ${it.price}`);
     if (it.region) lines.push(`   지역: ${it.region}`);
-    lines.push(`   링크: ${it.url}`);
+    lines.push(`   매물: ${it.url}`);
+    lines.push(`   빠른 채팅: ${chatHelperLink(it, message)}`);
     lines.push('');
   });
-  lines.push('모바일에서 링크를 눌러 빠르게 구매 문의하세요!');
+  lines.push(`인사말: "${message}"`);
+  lines.push('모바일에서 "빠른 채팅" 링크를 눌러 인사말을 복사한 뒤, 매물에서 "채팅하기"에 붙여넣으세요.');
   return lines.join('\n');
 }
 
@@ -74,7 +92,7 @@ function esc(s) {
   }[c]));
 }
 
-function buildHtml(watch, items) {
+function buildHtml(watch, items, message) {
   const cards = items
     .map(
       (it) => `
@@ -90,9 +108,12 @@ function buildHtml(watch, items) {
         </a>
         <div style="margin-top:4px;color:#333;font-size:15px;">${esc(it.price || '')}</div>
         <div style="margin-top:2px;color:#888;font-size:13px;">${esc(it.region || '')}</div>
-        <div style="margin-top:8px;">
-          <a href="${esc(it.url)}" style="display:inline-block;background:#ff6f0f;color:#fff;padding:8px 14px;border-radius:6px;font-size:13px;text-decoration:none;">
-            당근마켓에서 보기 →
+        <div style="margin-top:10px;">
+          <a href="${esc(chatHelperLink(it, message))}" style="display:inline-block;background:#ff6f0f;color:#fff;padding:9px 15px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;margin-right:6px;">
+            💬 빠른 채팅
+          </a>
+          <a href="${esc(it.url)}" style="display:inline-block;background:#fff;color:#e5620a;border:1.5px solid #ff6f0f;padding:7px 14px;border-radius:6px;font-size:13px;text-decoration:none;">
+            매물 보기 →
           </a>
         </div>
         <div style="clear:both;"></div>
@@ -111,8 +132,13 @@ function buildHtml(watch, items) {
         키워드 <b>'${esc(watch.keyword)}'</b> · 지역 <b>'${esc(watch.location)}'</b> 조건의 신규 매물 <b>${items.length}</b>건
       </p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${cards}</table>
-      <p style="margin:20px 0 0;color:#999;font-size:12px;">
-        모바일에서 위 버튼을 눌러 빠르게 구매 의사를 전달하세요.<br>
+      <div style="margin:18px 0 0;padding:12px 14px;background:#fff4ec;border-radius:8px;">
+        <div style="font-size:12px;color:#e5620a;font-weight:700;margin-bottom:4px;">미리 준비된 인사말</div>
+        <div style="font-size:15px;color:#333;">${esc(message)}</div>
+      </div>
+      <p style="margin:14px 0 0;color:#999;font-size:12px;">
+        <b>💬 빠른 채팅</b> 버튼 → 인사말 <b>복사</b> → <b>매물에서 "채팅하기"</b>에 붙여넣기 후 전송하세요.<br>
+        (계정 보호 및 당근마켓 이용약관 준수를 위해 전송은 직접 완료합니다.)<br>
         이 메일은 GitHub Actions 자동 알림으로 발송되었습니다.
       </p>
     </div>

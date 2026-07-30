@@ -62,6 +62,8 @@ async function main() {
 
     const id = watchId(watch, i);
     const to = watch.email || config.defaultEmail;
+    const chatMessage =
+      watch.chatMessage || config.defaultChatMessage || '안녕하세요. 제가 구매 가능할까요?';
 
     if (!watch.keyword) {
       console.warn(`[${id}] keyword 가 없어 건너뜁니다.`);
@@ -102,7 +104,7 @@ async function main() {
       );
     } else {
       try {
-        await sendNewItemsEmail({ to, watch, items: newItems });
+        await sendNewItemsEmail({ to, watch, items: newItems, chatMessage });
         console.log(`  ✉ 이메일 발송 완료 → ${to}`);
       } catch (err) {
         console.error(`  ✖ 이메일 발송 실패: ${err.message}`);

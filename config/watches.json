@@ -1,12 +1,14 @@
 {
   "$schema": "./watches.schema.json",
   "defaultEmail": "leemgs@gmail.com",
+  "defaultChatMessage": "안녕하세요. 제가 구매 가능할까요?",
   "watches": [
     {
       "id": "gamasot-suwon",
       "keyword": "가마솥",
       "location": "수원시",
       "email": "leemgs@gmail.com",
+      "chatMessage": "안녕하세요. 제가 구매 가능할까요?",
       "enabled": true
     }
   ]

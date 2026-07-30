@@ -44,6 +44,7 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME }}
+          CHAT_HELPER_URL: ${{ vars.CHAT_HELPER_URL }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: node check_daangn.js
 

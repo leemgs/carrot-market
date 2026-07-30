@@ -105,6 +105,18 @@ code { font-family: "SFMono-Regular", Menlo, Consolas, monospace; }
 .secrets { margin: 6px 0 12px; padding-left: 18px; }
 .secrets li { margin-bottom: 4px; }
 
+.chat-msg {
+  background: #fff4ec;
+  border: 1.5px dashed var(--carrot);
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 17px;
+  color: var(--ink);
+  margin: 6px 0 12px;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
 .example p { margin: 0; }
 
 footer { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 0 40px; }
