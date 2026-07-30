@@ -1,0 +1,16 @@
+{
+  "name": "carrot-market-alert",
+  "version": "1.0.0",
+  "private": true,
+  "description": "당근마켓 신규 매물 키워드/지역 알림 (Google SMTP 이메일)",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "check": "node check_daangn.js"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  }
+}

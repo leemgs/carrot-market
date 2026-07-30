@@ -1,0 +1,63 @@
+name: 당근마켓 신규 매물 알림
+
+# 실행 시점:
+#  - 매 15분마다 자동 실행 (cron, UTC 기준)
+#  - Actions 탭에서 수동 실행 (workflow_dispatch)
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '이메일을 실제로 보내지 않고 로그만 출력'
+        type: boolean
+        default: false
+
+# state/seen.json 커밋을 위해 쓰기 권한 필요
+permissions:
+  contents: write
+
+# 동시에 여러 실행이 겹쳐 state 커밋이 충돌하지 않도록 직렬화
+concurrency:
+  group: daangn-alert
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 의존성 설치
+        working-directory: scripts
+        run: npm install --no-audit --no-fund
+
+      - name: 당근마켓 검색 및 이메일 발송
+        working-directory: scripts
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node check_daangn.js
+
+      - name: 변경된 상태(state) 커밋
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          if [ -n "$(git status --porcelain state/)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add state/seen.json
+            git commit -m "chore: 감시 상태(seen.json) 업데이트 [skip ci]"
+            # 스케줄 사이 다른 커밋이 있었을 수 있으므로 rebase 후 push
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          else
+            echo "상태 변경 없음 - 커밋 생략"
+          fi

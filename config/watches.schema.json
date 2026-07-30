@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "당근마켓 알림 감시 목록",
+  "type": "object",
+  "properties": {
+    "defaultEmail": {
+      "type": "string",
+      "description": "watch 에 email 이 없을 때 사용할 기본 수신 이메일",
+      "format": "email"
+    },
+    "watches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["keyword"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "감시 항목 고유 ID (상태 추적용). 없으면 자동 생성"
+          },
+          "keyword": {
+            "type": "string",
+            "description": "조회할 제품 키워드 (제목에 포함되면 매칭). 예: 가마솥"
+          },
+          "location": {
+            "type": "string",
+            "description": "구매 가능 지역 (매물 지역/제목에 포함되면 매칭). 예: 수원시"
+          },
+          "email": {
+            "type": "string",
+            "description": "알림 수신 이메일. 없으면 defaultEmail 사용",
+            "format": "email"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "false 면 이 항목을 검사하지 않음",
+            "default": true
+          }
+        }
+      }
+    }
+  },
+  "required": ["watches"]
+}

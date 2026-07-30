@@ -1,0 +1,13 @@
+{
+  "$schema": "./watches.schema.json",
+  "defaultEmail": "leemgs@gmail.com",
+  "watches": [
+    {
+      "id": "gamasot-suwon",
+      "keyword": "가마솥",
+      "location": "수원시",
+      "email": "leemgs@gmail.com",
+      "enabled": true
+    }
+  ]
+}
