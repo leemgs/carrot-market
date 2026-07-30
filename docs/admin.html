@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>⚙️ 감시 목록 관리</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%95%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <h1>⚙️ 감시 목록 관리</h1>
+      <p class="tagline">웹에서 바로 조회 · 추가 · 수정 · 삭제하고 GitHub에 저장합니다.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- 1. 연결 설정 -->
+    <section class="card">
+      <h2>1. GitHub 연결</h2>
+      <details class="help">
+        <summary>토큰이 왜 필요한가요? (클릭)</summary>
+        <p class="hint">
+          이 페이지는 서버 없이 브라우저에서 GitHub API로 <code>config/watches.json</code> 을
+          직접 읽고 커밋합니다. 그래서 <b>Contents 읽기/쓰기 권한</b>이 있는 토큰이 필요합니다.
+        </p>
+        <ul class="secrets">
+          <li>
+            <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
+              Fine-grained 토큰 만들기 →
+            </a>
+          </li>
+          <li>Repository access: <b>이 저장소만</b> 선택</li>
+          <li>Permissions → Repository → <b>Contents: Read and write</b></li>
+        </ul>
+        <p class="hint">
+          ⚠️ 토큰은 이 브라우저의 <code>localStorage</code> 에만 저장됩니다(서버 전송 없음).
+          공용 PC에서는 사용 후 <b>토큰 삭제</b>를 눌러 지우세요.
+        </p>
+      </details>
+
+      <form id="conn-form">
+        <label>
+          GitHub 토큰 (Personal Access Token)
+          <input id="token" type="password" placeholder="github_pat_..." autocomplete="off" />
+        </label>
+        <div class="row">
+          <label style="flex:1;">
+            저장소 (owner/repo)
+            <input id="repo" type="text" placeholder="leemgs/carrot-market" />
+          </label>
+          <label style="width:130px;">
+            브랜치
+            <input id="branch" type="text" placeholder="main" />
+          </label>
+        </div>
+        <div class="btn-row">
+          <button id="load-btn" type="submit">🔄 불러오기</button>
+          <button id="clear-token-btn" type="button" class="secondary">토큰 삭제</button>
+        </div>
+      </form>
+      <p id="conn-status" class="status"></p>
+    </section>
+
+    <!-- 2. 기본값 -->
+    <section class="card hidden" id="defaults-card">
+      <h2>2. 기본 설정</h2>
+      <div class="row">
+        <label style="flex:1;">
+          기본 수신 이메일
+          <input id="default-email" type="email" placeholder="myname@gmail.com" />
+        </label>
+      </div>
+      <label>
+        기본 채팅 인사말
+        <input id="default-msg" type="text" placeholder="안녕하세요. 제가 구매 가능할까요?" />
+      </label>
+    </section>
+
+    <!-- 3. 감시 목록 -->
+    <section class="card hidden" id="list-card">
+      <div class="list-head">
+        <h2>3. 감시 목록 (<span id="count">0</span>)</h2>
+        <button id="add-btn" type="button">＋ 항목 추가</button>
+      </div>
+      <div class="table-scroll">
+        <table class="watch-table">
+          <thead>
+            <tr>
+              <th>사용</th><th>키워드</th><th>지역</th><th>이메일</th><th>인사말</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="watch-tbody"></tbody>
+        </table>
+      </div>
+      <p id="empty-note" class="hint hidden">등록된 감시 항목이 없습니다. "항목 추가"를 눌러 시작하세요.</p>
+    </section>
+
+    <!-- 편집 폼 (추가/수정 공용) -->
+    <section class="card hidden" id="edit-card">
+      <h2 id="edit-title">항목 추가</h2>
+      <form id="edit-form" autocomplete="off">
+        <input type="hidden" id="edit-index" />
+        <label>
+          조회할 제품 (키워드) <span class="req">*</span>
+          <input id="f-keyword" type="text" placeholder="예: 가마솥" required />
+        </label>
+        <label>
+          구매 가능 위치 (지역)
+          <input id="f-location" type="text" placeholder="예: 수원시" />
+        </label>
+        <label>
+          알림 받을 이메일 (비우면 기본값 사용)
+          <input id="f-email" type="email" placeholder="myname@gmail.com" />
+        </label>
+        <label>
+          채팅 인사말 (비우면 기본값 사용)
+          <input id="f-msg" type="text" placeholder="안녕하세요. 제가 구매 가능할까요?" />
+        </label>
+        <label class="check">
+          <input id="f-enabled" type="checkbox" checked /> 이 항목 사용(활성화)
+        </label>
+        <div class="btn-row">
+          <button type="submit">확인</button>
+          <button type="button" id="edit-cancel" class="secondary">취소</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 4. 저장 -->
+    <section class="card hidden" id="save-card">
+      <h2>4. GitHub에 저장</h2>
+      <p class="hint">변경 사항을 <code>config/watches.json</code> 에 커밋합니다. 다음 실행부터 반영됩니다.</p>
+      <button id="save-btn" type="button">💾 변경사항 저장(커밋)</button>
+      <p id="save-status" class="status"></p>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p><a href="./index.html">← 홈으로</a></p>
+  </footer>
+
+  <script src="./assets/admin.js"></script>
+</body>
+</html>

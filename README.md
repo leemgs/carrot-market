@@ -14,6 +14,7 @@
 | 경로 | 설명 |
 | --- | --- |
 | `docs/` | 홈페이지(GitHub Pages). 키워드·지역·이메일을 입력해 감시 설정을 생성 |
+| `docs/admin.html` | 웹 관리자. GitHub API로 감시 목록을 조회·추가·수정·삭제하고 커밋 |
 | `docs/chat.html` | 빠른 채팅 도우미. 이메일에서 열려 인사말 복사 + 매물 채팅 화면으로 이동 |
 | `config/watches.json` | 감시 목록(키워드/지역/이메일) |
 | `scripts/` | 당근마켓 검색·파싱·이메일 발송 Node 스크립트 |
@@ -52,8 +53,18 @@ GitHub Actions (매 15분, cron)
 (선택) **Variables** 탭에서 `MAIL_FROM_NAME` 을 등록하면 발신자 표시 이름을 바꿀 수 있습니다.
 
 ### 3. 감시 항목 등록
-[홈페이지](https://leemgs.github.io/carrot-market/)에서 키워드·지역·이메일을 입력해
-설정을 생성하거나, `config/watches.json` 을 직접 편집합니다.
+
+**방법 A — 웹 관리자 (권장):** [관리자 페이지](https://leemgs.github.io/carrot-market/admin.html)에서
+감시 항목을 **조회·추가·수정·삭제**하고 GitHub에 바로 저장합니다.
+파일을 직접 편집할 필요가 없습니다.
+
+- GitHub **Fine-grained 토큰**(이 저장소, Contents Read and write)이 필요합니다.
+  [토큰 만들기](https://github.com/settings/personal-access-tokens/new)
+- 토큰은 브라우저 `localStorage` 에만 저장되며 서버로 전송되지 않습니다.
+  공용 PC에서는 사용 후 "토큰 삭제"를 누르세요.
+
+**방법 B — 수동 편집:** [홈페이지](https://leemgs.github.io/carrot-market/)에서 설정 코드를 생성하거나
+`config/watches.json` 을 직접 편집합니다.
 
 ```json
 {

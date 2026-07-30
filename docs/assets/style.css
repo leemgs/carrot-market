@@ -119,6 +119,40 @@ code { font-family: "SFMono-Regular", Menlo, Consolas, monospace; }
 
 .example p { margin: 0; }
 
+/* ---- 관리자 페이지 ---- */
+.row { display: flex; gap: 12px; }
+.row > label { flex: 1; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.status { font-size: 13px; margin: 10px 0 0; min-height: 18px; }
+.status.ok { color: #128a3c; }
+.status.err { color: #d23f31; }
+.help { margin-bottom: 14px; }
+.help summary { cursor: pointer; font-weight: 600; color: var(--carrot-dark); font-size: 14px; }
+label.check { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; }
+label.check input { width: auto; }
+.req { color: #d23f31; }
+
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.list-head h2 { margin: 0; }
+#add-btn { padding: 8px 14px; font-size: 14px; }
+
+.table-scroll { overflow-x: auto; margin-top: 12px; }
+.watch-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.watch-table th, .watch-table td {
+  text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.watch-table th { font-size: 12px; color: var(--muted); font-weight: 700; }
+.watch-table .muted-cell { color: var(--muted); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.watch-table .actions { white-space: nowrap; text-align: right; }
+button.mini {
+  padding: 6px 10px; font-size: 12px; border-radius: 6px; margin-left: 4px;
+  background: #fff; color: var(--carrot-dark); border: 1.5px solid var(--carrot);
+}
+button.mini:hover { background: #fff4ec; }
+button.mini.danger { color: #d23f31; border-color: #f0b6b0; }
+button.mini.danger:hover { background: #fdeceb; }
+
 footer { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 0 40px; }
 footer a { color: var(--carrot-dark); }
 
