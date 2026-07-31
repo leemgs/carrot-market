@@ -230,7 +230,7 @@ flowchart TD
 | --- | --- |
 | `keyword` | 조회할 제품 키워드 (매물 제목에 포함되면 매칭) |
 | `location` | 구매 가능 지역 (매물 지역/제목에 포함되면 매칭). **비우면 전국** |
-| `email` | 알림 수신 이메일 (없으면 `defaultEmail` 사용) |
+| `email` | 알림 수신 이메일 (없으면 `defaultEmail` 사용). **여러 명**은 배열 `["a@x.com","b@y.com"]` 또는 쉼표구분 문자열 `"a@x.com, b@y.com"` |
 | `chatMessage` | 채팅 도우미에 미리 채울 인사말 (없으면 `defaultChatMessage`) |
 | `enabled` | `false` 면 검사 제외 |
 

@@ -43,6 +43,28 @@ function watchId(watch, index) {
   return watch.id || `${watch.keyword}__${watch.location}__${index}`;
 }
 
+// 이메일 값을 정규화한다. 문자열/쉼표(세미콜론/공백)구분/배열을 모두 허용.
+function splitEmails(value) {
+  if (!value) return [];
+  const arr = Array.isArray(value) ? value : String(value).split(/[,;\s]+/);
+  const seen = new Set();
+  const out = [];
+  for (const raw of arr) {
+    const e = String(raw).trim();
+    if (e && !seen.has(e.toLowerCase())) {
+      seen.add(e.toLowerCase());
+      out.push(e);
+    }
+  }
+  return out;
+}
+
+// watch.email 을 우선 사용하고, 없으면 defaultEmail 로 폴백해 수신자 배열을 만든다.
+function resolveRecipients(watchEmail, defaultEmail) {
+  const primary = splitEmails(watchEmail);
+  return primary.length ? primary : splitEmails(defaultEmail);
+}
+
 async function main() {
   const dryRun = process.env.DRY_RUN === 'true';
   const config = readJson(CONFIG_PATH, null);
@@ -66,7 +88,7 @@ async function main() {
     if (watch.enabled === false) continue;
 
     const id = watchId(watch, i);
-    const to = watch.email || config.defaultEmail;
+    const to = resolveRecipients(watch.email, config.defaultEmail);
     const chatMessage =
       watch.chatMessage || config.defaultChatMessage || '안녕하세요. 제가 구매 가능할까요?';
 
@@ -74,12 +96,12 @@ async function main() {
       console.warn(`[${id}] keyword 가 없어 건너뜁니다.`);
       continue;
     }
-    if (!to) {
+    if (!to.length) {
       console.warn(`[${id}] 수신 이메일(email)이 없어 건너뜁니다.`);
       continue;
     }
 
-    console.log(`\n▶ 검색: 키워드='${watch.keyword}' 지역='${watch.location || '(전체)'}' → ${to}`);
+    console.log(`\n▶ 검색: 키워드='${watch.keyword}' 지역='${watch.location || '(전체)'}' → ${to.join(', ')}`);
 
     let found;
     try {
@@ -128,7 +150,7 @@ async function main() {
     if (wantEmail) {
       try {
         await sendNewItemsEmail({ to, watch, items: newItems, chatMessage });
-        console.log(`  ✉ 이메일 발송 완료 → ${to}`);
+        console.log(`  ✉ 이메일 발송 완료 → ${to.join(', ')}`);
         notified = true;
       } catch (err) {
         console.error(`  ✖ 이메일 발송 실패: ${err.message}`);

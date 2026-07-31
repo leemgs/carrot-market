@@ -30,7 +30,7 @@ function createTransport() {
 /**
  * 새 매물 목록을 HTML 이메일로 발송.
  * @param {object} params
- * @param {string} params.to            수신 이메일
+ * @param {string|string[]} params.to   수신 이메일 (1개 문자열 또는 여러 개 배열)
  * @param {object} params.watch         {keyword, location}
  * @param {Array}  params.items         새로 발견된 매물 배열
  * @param {string} [params.chatMessage] 채팅 도우미에 미리 채울 인사말

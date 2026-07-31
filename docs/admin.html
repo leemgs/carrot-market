@@ -71,8 +71,8 @@
       <h2>2. 기본 설정</h2>
       <div class="row">
         <label style="flex:1;">
-          기본 수신 이메일
-          <input id="default-email" type="email" placeholder="myname@gmail.com" />
+          기본 수신 이메일 <span class="hint" style="font-weight:400;">(여러 개는 쉼표로 구분)</span>
+          <input id="default-email" type="email" multiple placeholder="myname@gmail.com, family@gmail.com" />
         </label>
       </div>
       <label>
@@ -124,7 +124,8 @@
         </label>
         <label>
           알림 받을 이메일 (비우면 기본값 사용)
-          <input id="f-email" type="email" placeholder="myname@gmail.com" />
+          <input id="f-email" type="email" multiple placeholder="myname@gmail.com, friend@gmail.com" />
+          <span class="hint" style="font-weight:400;">여러 명에게 보내려면 쉼표(,)로 구분해 입력하세요.</span>
         </label>
         <label>
           채팅 인사말 (비우면 기본값 사용)

@@ -28,6 +28,33 @@ const tbody = $('watch-tbody');
 // 지역 선택 드롭다운(시/도 → 시/군/구)
 const regionPicker = createRegionPicker($('f-sido'), $('f-sigungu'), $('f-dong'));
 
+// ------- 이메일 다중 수신 처리 -------
+// 문자열/쉼표(세미콜론/공백)구분/배열 입력을 정규화된 배열로 변환.
+function parseEmails(value) {
+  if (!value) return [];
+  const arr = Array.isArray(value) ? value : String(value).split(/[,;\s]+/);
+  const seen = new Set();
+  const out = [];
+  for (const raw of arr) {
+    const e = String(raw).trim();
+    if (e && !seen.has(e.toLowerCase())) {
+      seen.add(e.toLowerCase());
+      out.push(e);
+    }
+  }
+  return out;
+}
+// 배열/문자열을 입력창·표에 보여줄 쉼표구분 문자열로.
+function formatEmails(value) {
+  return parseEmails(value).join(', ');
+}
+// 저장용: 여러 개면 배열, 1개면 문자열, 없으면 undefined.
+function emailsToStore(value) {
+  const list = parseEmails(value);
+  if (list.length === 0) return undefined;
+  return list.length === 1 ? list[0] : list;
+}
+
 // ------- 초기화: 저장된 값 복원 -------
 tokenEl.value = localStorage.getItem(LS_TOKEN) || '';
 repoEl.value = localStorage.getItem(LS_REPO) || DEFAULT_REPO;
@@ -124,7 +151,7 @@ function render() {
   $('list-card').classList.remove('hidden');
   $('save-card').classList.remove('hidden');
 
-  $('default-email').value = data.defaultEmail || '';
+  $('default-email').value = formatEmails(data.defaultEmail);
   $('default-msg').value = data.defaultChatMessage || '';
   $('opt-email').checked = data.sendEmail !== false;
   $('opt-issue').checked = data.createIssues !== false;
@@ -139,7 +166,7 @@ function render() {
       <td><input type="checkbox" data-toggle="${i}" ${w.enabled === false ? '' : 'checked'}></td>
       <td><b>${esc(w.keyword)}</b></td>
       <td>${esc(w.location)}</td>
-      <td class="muted-cell">${esc(w.email || '(기본값)')}</td>
+      <td class="muted-cell">${w.email ? esc(formatEmails(w.email)) : '(기본값)'}</td>
       <td class="muted-cell">${esc(w.chatMessage || '(기본값)')}</td>
       <td class="actions">
         <button type="button" class="mini" data-edit="${i}">수정</button>
@@ -193,7 +220,7 @@ tbody.addEventListener('change', (e) => {
 });
 
 // ------- 이벤트: 기본값 입력 반영 -------
-$('default-email').addEventListener('input', (e) => (data.defaultEmail = e.target.value.trim()));
+$('default-email').addEventListener('input', (e) => (data.defaultEmail = emailsToStore(e.target.value) || ''));
 $('default-msg').addEventListener('input', (e) => (data.defaultChatMessage = e.target.value.trim()));
 $('opt-email').addEventListener('change', (e) => (data.sendEmail = e.target.checked));
 $('opt-issue').addEventListener('change', (e) => (data.createIssues = e.target.checked));
@@ -213,7 +240,7 @@ function openEdit(index) {
   const w = isNew ? {} : data.watches[index];
   $('f-keyword').value = w.keyword || '';
   regionPicker.setValue(w.location || '');
-  $('f-email').value = w.email || '';
+  $('f-email').value = formatEmails(w.email);
   $('f-msg').value = w.chatMessage || '';
   $('f-enabled').checked = w.enabled !== false;
   $('edit-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -231,7 +258,7 @@ $('edit-form').addEventListener('submit', (e) => {
     id: slugId(keyword, location),
     keyword,
     location,
-    email: $('f-email').value.trim() || undefined,
+    email: emailsToStore($('f-email').value),
     chatMessage: $('f-msg').value.trim() || undefined,
     enabled: $('f-enabled').checked,
   };

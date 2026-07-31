@@ -37,7 +37,14 @@ form.addEventListener('submit', (e) => {
 
   const keyword = document.getElementById('keyword').value.trim();
   const location = regionPicker.getValue();
-  const email = document.getElementById('email').value.trim();
+  // 이메일을 쉼표/세미콜론/공백으로 분리해 정규화 (여러 명 지원)
+  const emails = document
+    .getElementById('email')
+    .value.split(/[,;\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // 여러 개면 배열로, 1개면 문자열로 저장
+  const email = emails.length > 1 ? emails : emails[0] || '';
 
   const watch = {
     id: makeId(keyword, location),
