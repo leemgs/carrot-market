@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🔔 매물 알림 · 당근마켓 신규 매물 알림</title>
+  <meta name="description" content="당근마켓 신규 매물 알림 이슈 목록을 상태와 키워드로 필터링해 확인합니다." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%95%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body data-page="issues">
+  <div id="nav-mount"></div>
+
+  <header class="hero slim">
+    <div class="wrap wide">
+      <h1>🔔 매물 알림</h1>
+      <p class="tagline">신규 매물이 발견되면 GitHub 이슈로 기록됩니다. 확인 후 이슈를 닫아 정리하세요.</p>
+    </div>
+  </header>
+
+  <main class="wrap wide">
+    <section class="card">
+      <div class="filter-bar">
+        <div class="seg">
+          <button data-state="open" class="on">열림</button>
+          <button data-state="closed">닫힘</button>
+          <button data-state="all">전체</button>
+        </div>
+        <input id="search" type="search" placeholder="🔍 키워드·지역 검색" />
+        <button id="reload-btn" class="secondary" type="button" style="flex:0 0 auto;">🔄 새로고침</button>
+        <span id="result-count" class="hint" style="margin:0;"></span>
+      </div>
+
+      <div id="issue-list" class="issue-list">
+        <p class="state-msg"><span class="spinner"></span> 불러오는 중…</p>
+      </div>
+    </section>
+
+    <p class="hint" style="text-align:center;">
+      이 목록은 저장소의 <code>당근마켓-알림</code> 라벨이 붙은 GitHub 이슈를 실시간으로 읽어옵니다.
+      각 항목을 누르면 GitHub 이슈로 이동해 매물 링크와 빠른 채팅 링크를 볼 수 있습니다.
+    </p>
+  </main>
+
+  <footer class="wrap wide">
+    <p><a href="./index.html">← 대시보드로</a></p>
+  </footer>
+
+  <script src="./assets/nav.js"></script>
+  <script src="./assets/gh-data.js"></script>
+  <script src="./assets/issues.js"></script>
+</body>
+</html>

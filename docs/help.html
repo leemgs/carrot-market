@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>❓ 도움말 · 당근마켓 신규 매물 알림</title>
+  <meta name="description" content="당근마켓 신규 매물 알림의 동작 방식과 Gmail/GitHub 설정 방법을 안내합니다." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%95%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body data-page="help">
+  <div id="nav-mount"></div>
+
+  <header class="hero slim">
+    <div class="wrap">
+      <h1>❓ 도움말</h1>
+      <p class="tagline">동작 방식과 최초 설정 방법을 안내합니다.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card steps">
+      <h2>어떻게 동작하나요?</h2>
+      <ol>
+        <li><b>키워드·지역·이메일</b>을 입력해 감시 항목을 만듭니다.</li>
+        <li><b>GitHub Actions</b>가 15분마다 당근마켓을 검색합니다.</li>
+        <li>조건(제목에 키워드 포함 + 해당 지역)에 맞는 <b>신규 매물</b>을 찾으면</li>
+        <li><b>GitHub 이슈 등록</b>과 <b>Gmail 이메일 발송</b>을 함께 수행합니다.</li>
+        <li>이메일/이슈의 <b>💬 빠른 채팅</b> → 인사말 <b>복사</b> → 매물에서 <b>"채팅하기"</b>에 붙여넣기!</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>알림 채널</h2>
+      <p class="hint" style="font-size:14px;">신규 매물이 발견되면 두 채널로 동시에 알립니다.</p>
+      <ul class="secrets">
+        <li><b>🔔 GitHub 이슈</b> — <code>당근마켓-알림</code> 라벨로 이슈가 생성됩니다.
+          별도 설정 없이 동작하며, <a href="./issues.html">매물 알림</a> 메뉴에서 목록으로 볼 수 있습니다.</li>
+        <li><b>✉️ 이메일</b> — 아래 Gmail SMTP 설정이 필요합니다.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>이메일(Gmail) 설정</h2>
+      <h3>1. Gmail 앱 비밀번호 발급</h3>
+      <p class="hint">발신용 Gmail 계정에서 <b>2단계 인증</b>을 켜고, 16자리 앱 비밀번호를 발급합니다.</p>
+      <a class="button-link secondary" href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener">앱 비밀번호 발급 방법 →</a>
+
+      <h3>2. GitHub 저장소에 등록</h3>
+      <p class="hint">저장소 <b>Settings → Secrets and variables → Actions</b> 에서 등록합니다.</p>
+      <ul class="secrets">
+        <li><b>Secrets</b> 탭 → <code>GMAIL_APP_PASSWORD</code> = 앱 비밀번호(16자리)</li>
+        <li><b>Variables</b> 탭 → <code>GMAIL_USER</code> = 발신 Gmail 주소</li>
+        <li>(선택) <b>Variables</b> → <code>MAIL_FROM_NAME</code> = 발신자 표시 이름</li>
+      </ul>
+      <p class="hint">
+        ℹ️ <code>GMAIL_USER</code> 는 민감정보가 아니므로 Variables 를 권장합니다.
+        워크플로가 <code>vars</code> 우선 <code>secrets</code> 폴백으로 읽어 어느 쪽에 넣어도 동작합니다.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>지역(location) 매칭 규칙</h2>
+      <ul class="secrets">
+        <li><b>비워두면 전국</b> 대상으로 조회합니다.</li>
+        <li>지역을 넣으면 매물 위치/제목에 그 지역명이 포함될 때 매칭됩니다. 시 단위 입력은 그 안의 동으로 확장 매칭됩니다.</li>
+        <li>⚠️ 당근은 매물 위치를 동 이름(예: <code>영통동</code>)만 표시하는 경우가 있어, 시 단위 입력이 일부 매물과 매칭되지 않을 수 있습니다. 이럴 땐 동 이름으로 등록하거나 지역을 비워 전국으로 받은 뒤 이메일/이슈에서 위치를 확인하세요.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>빠른 채팅 도우미 💬</h2>
+      <p class="hint" style="font-size:14px;">
+        이메일/이슈의 <b>"💬 빠른 채팅"</b> 링크를 누르면 도우미 페이지가 열립니다.
+        인사말을 복사한 뒤 당근마켓 매물의 <b>"채팅하기"</b>에 붙여넣어 전송하세요.
+      </p>
+      <p class="hint">
+        ⚠️ 당근마켓은 로그인/메시지 전송의 완전 자동화가 이용약관 위반·계정 정지 위험이 있어,
+        이 도우미는 인사말 복사와 채팅 화면 이동까지만 돕고 최종 전송은 사용자가 직접 누르도록 설계했습니다.
+      </p>
+    </section>
+
+    <section class="card example">
+      <h2>예시</h2>
+      <p>
+        제품 <b>가마솥</b>, 지역 <b>수원시</b>로 등록하면 —
+        판매 위치가 <b>수원</b>이면서 제목에 <b>가마솥</b>이 포함된 새 매물이 올라올 때
+        지정한 이메일과 GitHub 이슈로 매물 정보와 구매 링크가 도착합니다.
+      </p>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p>
+      <a href="./index.html">← 대시보드로</a> ·
+      <a href="https://github.com/leemgs/carrot-market" target="_blank" rel="noopener">소스 코드</a>
+    </p>
+  </footer>
+
+  <script src="./assets/nav.js"></script>
+</body>
+</html>

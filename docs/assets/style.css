@@ -163,3 +163,124 @@ footer a { color: var(--carrot-dark); }
   .hero h1 { font-size: 23px; }
   .card { padding: 18px; }
 }
+
+/* ============================================================
+   메뉴 기반 다중 페이지 UI (네비게이션 / 대시보드 / 이슈)
+   ============================================================ */
+
+.wrap.wide { max-width: 960px; }
+
+/* ---- 상단 네비게이션 ---- */
+.topnav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 960px; margin: 0 auto; padding: 10px 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+.brand {
+  font-weight: 800; font-size: 18px; color: var(--carrot-dark);
+  text-decoration: none; white-space: nowrap; display: flex; align-items: center; gap: 4px;
+}
+.nav-links { display: flex; gap: 4px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+.nav-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 9px;
+  color: var(--ink); text-decoration: none; font-weight: 600; font-size: 14px;
+}
+.nav-link:hover { background: #fff4ec; color: var(--carrot-dark); }
+.nav-link.active { background: var(--carrot); color: #fff; }
+.nav-link.active:hover { background: var(--carrot-dark); color: #fff; }
+.nav-ext { color: var(--muted); font-weight: 500; }
+.nav-toggle {
+  display: none; margin-left: auto;
+  background: #fff; color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; font-size: 18px; font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .nav-toggle { display: block; }
+  .nav-links {
+    display: none; position: absolute; left: 0; right: 0; top: 100%;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: #fff; border-bottom: 1px solid var(--border); padding: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  }
+  .nav-links.open { display: flex; }
+  .nav-inner { position: relative; }
+  .nav-link { border-radius: 8px; padding: 12px; }
+}
+
+/* ---- 대시보드 통계 카드 ---- */
+.stat-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px; margin-bottom: 20px;
+}
+.stat {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.stat .num { font-size: 30px; font-weight: 800; color: var(--carrot-dark); line-height: 1.1; }
+.stat .lbl { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 600; }
+.stat .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ---- 칩(키워드) ---- */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fff4ec; color: var(--carrot-dark);
+  border: 1px solid #ffd9bd; border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; font-weight: 600;
+}
+.chip.off { background: #f1f3f5; color: var(--muted); border-color: var(--border); }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: #22a558; }
+.chip.off .dot { background: #b0b6bd; }
+
+/* ---- 이슈/알림 리스트 ---- */
+.issue-list { display: flex; flex-direction: column; gap: 12px; }
+.issue-item {
+  display: block; background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; text-decoration: none; color: inherit;
+  transition: border-color .12s, box-shadow .12s;
+}
+.issue-item:hover { border-color: var(--carrot); box-shadow: 0 2px 10px rgba(255,111,15,0.10); }
+.issue-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.issue-title { font-weight: 700; font-size: 15px; color: var(--ink); }
+.issue-meta { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 6px; }
+.issue-meta b { color: var(--ink); }
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px;
+  padding: 2px 9px; white-space: nowrap;
+}
+.badge.open { background: #e7f6ec; color: #128a3c; }
+.badge.closed { background: #f0eef7; color: #7c5cbf; }
+.badge.count { background: #fff4ec; color: var(--carrot-dark); }
+
+/* ---- 필터 바 ---- */
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.filter-bar input, .filter-bar select { width: auto; flex: 1; min-width: 140px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.seg button {
+  background: #fff; color: var(--muted); border: none; border-radius: 0;
+  padding: 9px 14px; font-size: 13px; font-weight: 600;
+}
+.seg button.on { background: var(--carrot); color: #fff; }
+
+/* ---- 상태 표시 ---- */
+.state-msg { text-align: center; color: var(--muted); padding: 34px 10px; font-size: 14px; }
+.spinner {
+  width: 22px; height: 22px; border: 3px solid #eee; border-top-color: var(--carrot);
+  border-radius: 50%; display: inline-block; animation: spin .8s linear infinite; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
+.section-head h2 { margin: 0; }
+.section-head a { font-size: 13px; color: var(--carrot-dark); font-weight: 600; text-decoration: none; }
+
+/* 대시보드에서는 hero를 조금 더 컴팩트하게 */
+.hero.slim { padding: 30px 0 26px; }
+.hero.slim h1 { font-size: 24px; }
