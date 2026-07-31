@@ -6,17 +6,17 @@
   "createIssues": true,
   "watches": [
     {
-      "id": "gamasot-suwon",
+      "id": "gamasot-jeonguk",
       "keyword": "가마솥",
-      "location": "수원시",
+      "location": "",
       "email": "leemgs@gmail.com",
       "chatMessage": "안녕하세요. 제가 구매 가능할까요?",
       "enabled": true
     },
     {
-      "id": "고추대-수원시",
+      "id": "고추대-전국",
       "keyword": "고추대",
-      "location": "수원시",
+      "location": "",
       "email": "leemgs@gmail.com",
       "enabled": true
     },
