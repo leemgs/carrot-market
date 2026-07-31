@@ -19,7 +19,8 @@ editLink.href = `https://github.com/${REPO}/edit/${BRANCH}/${CONFIG_PATH}`;
 // 지역 선택 드롭다운(시/도 → 시/군/구)
 const regionPicker = createRegionPicker(
   document.getElementById('location-sido'),
-  document.getElementById('location-sigungu')
+  document.getElementById('location-sigungu'),
+  document.getElementById('location-dong')
 );
 
 // 키워드+지역을 조합해 사람이 읽기 쉬운 id 생성

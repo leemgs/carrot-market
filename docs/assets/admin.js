@@ -26,7 +26,7 @@ const saveStatus = $('save-status');
 const tbody = $('watch-tbody');
 
 // 지역 선택 드롭다운(시/도 → 시/군/구)
-const regionPicker = createRegionPicker($('f-sido'), $('f-sigungu'));
+const regionPicker = createRegionPicker($('f-sido'), $('f-sigungu'), $('f-dong'));
 
 // ------- 초기화: 저장된 값 복원 -------
 tokenEl.value = localStorage.getItem(LS_TOKEN) || '';

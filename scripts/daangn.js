@@ -192,11 +192,26 @@ function locationVariants(location) {
   const loc = normalize(location);
   if (!loc) return [];
   const variants = new Set([loc]);
-  const stem = loc.replace(
-    /(특별자치시|특별자치도|특별시|광역시|시|군|구|읍|면|동|리)$/,
-    ''
+
+  const addStem = (s) => {
+    const stem = s.replace(
+      /(특별자치시|특별자치도|특별시|광역시|시|군|구|읍|면|동|리)$/,
+      ''
+    );
+    if (stem && stem.length >= 2 && stem !== s) variants.add(stem);
+  };
+  addStem(loc);
+
+  // 연결된 행정구역명 분해 (수원시영통구 -> 수원시, 영통구 / 각 어간도 추가)
+  const chunks = loc.match(
+    /[가-힣]+?(?:특별자치시|특별자치도|특별시|광역시|시|군|구|읍|면|동|리)/g
   );
-  if (stem && stem.length >= 2 && stem !== loc) variants.add(stem);
+  if (chunks && chunks.length > 1) {
+    for (const c of chunks) {
+      if (c.length >= 2) variants.add(c);
+      addStem(c);
+    }
+  }
   return [...variants];
 }
 
@@ -206,10 +221,20 @@ function locationVariants(location) {
  * - 지역 입력 시: 매물 지역/제목에 지역명(또는 어간)이 포함되면 통과
  * - 매물에 지역 정보가 아예 없을 땐 기본 제외(STRICT_REGION=false 면 통과)
  */
+function keywordMatches(title, keyword) {
+  const t = normalize(title);
+  // 다중 단어 키워드는 순서와 무관하게 모든 토큰이 제목에 있으면 매칭
+  const tokens = String(keyword || '')
+    .trim()
+    .split(/\s+/)
+    .map(normalize)
+    .filter(Boolean);
+  if (tokens.length === 0) return true;
+  return tokens.every((tok) => t.includes(tok));
+}
+
 function matchesWatch(item, watch) {
-  const kw = normalize(watch.keyword);
-  const titleOk = kw ? normalize(item.title).includes(kw) : true;
-  if (!titleOk) return false;
+  if (!keywordMatches(item.title, watch.keyword)) return false;
 
   if (isNationwide(watch.location)) return true; // 지역 미입력 → 전국
 
@@ -235,6 +260,17 @@ async function searchDaangn(watch) {
       `    [DEBUG] HTML ${html.length}자, 파싱된 매물 ${items.length}건, 매칭 ${matched.length}건` +
         (isNationwide(watch.location) ? ' (전국 검색)' : '')
     );
+    // 매물 링크가 페이지에 몇 번 등장하는지(파서와 무관한 원자료 신호)
+    const rawLinks = (html.match(/\/kr\/buy-sell\//g) || []).length;
+    const hasNextData = html.includes('__NEXT_DATA__') || html.includes('__next_f');
+    console.log(
+      `    [DEBUG] buy-sell 링크 흔적 ${rawLinks}회, RSC/NEXT ${hasNextData ? '있음' : '없음'}`
+    );
+    if (items.length === 0) {
+      // 파싱 0건이면 페이지 앞부분을 덤프해 차단/리다이렉트/JS쉘 여부 확인
+      const snippet = html.replace(/\s+/g, ' ').slice(0, 400);
+      console.log(`    [DEBUG] HTML 앞부분: ${snippet}`);
+    }
     items.slice(0, 5).forEach((it) =>
       console.log(`    [DEBUG] · ${it.title || '(제목없음)'} | ${it.region || '-'} | ${it.url}`)
     );

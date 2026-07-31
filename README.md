@@ -9,6 +9,151 @@
 
 ---
 
+## 🧩 한눈에 보기
+
+감시 목록(`config/watches.json`)을 기준으로 당근마켓을 **검색**하고, 신규 매물만 **선별**해
+**이메일·GitHub 이슈** 두 갈래로 **알림**을 보내는 단일 파이프라인입니다. GitHub Actions가
+15분마다 돌립니다.
+
+```mermaid
+flowchart LR
+    subgraph IN["📥 입력"]
+        CFG["📄 config/watches.json<br/>키워드·지역·이메일"]
+        WEB1["🌐 docs/ 홈·관리자<br/>지역 드롭다운 등록"]
+    end
+
+    subgraph PIPE["🐍 check_daangn.js (Node)"]
+        direction LR
+        FT["📡 daangn.js<br/><b>검색·파싱</b><br/>JSON-LD/RSC"]
+        FL["🔎 필터<br/><b>키워드+지역</b>"]
+        DF["🆕 신규 선별<br/><b>seen 비교</b>"]
+        FT --> FL --> DF
+    end
+
+    DB[("🗂️ state/seen.json<br/><b>중복 방지 상태</b>")]
+
+    subgraph OUT["🎯 알림"]
+        MAIL["✉️ mailer.js<br/>Gmail SMTP"]
+        ISSUE["🐙 github.js<br/>GitHub 이슈"]
+        CHAT["💬 docs/chat.html<br/>빠른 채팅 도우미"]
+    end
+
+    WEB1 --> CFG
+    CFG --> FT
+    ST["🌐 당근마켓 검색"] --> FT
+    DF <--> DB
+    DF --> MAIL
+    DF --> ISSUE
+    MAIL --> CHAT
+    ISSUE --> CHAT
+    CRON["⏰ GitHub Actions<br/>매 15분 cron"] -. "트리거" .-> PIPE
+
+    style FT fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a
+    style FL fill:#fef3c7,stroke:#f59e0b,color:#78350f
+    style DF fill:#e9d5ff,stroke:#a855f7,color:#581c87
+    style DB fill:#dcfce7,stroke:#22c55e,color:#14532d
+    style MAIL fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    style ISSUE fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    style CHAT fill:#dcfce7,stroke:#22c55e,color:#14532d
+```
+
+| 단계 | 모듈 | 한 줄 설명 |
+|---|---|---|
+| 📡 **검색·파싱** | [`scripts/daangn.js`](scripts/daangn.js) | 당근 검색 HTML에서 매물 파싱 (JSON-LD → RSC 스트림 → 링크 폴백) |
+| 🔎 **필터** | [`scripts/daangn.js`](scripts/daangn.js) | 제목에 키워드 포함 + 지역 일치(어간/구 분해 매칭, 미입력 시 전국) |
+| 🆕 **신규 선별** | [`scripts/check_daangn.js`](scripts/check_daangn.js) | `state/seen.json`과 비교해 새 매물만 추출 |
+| ✉️ **이메일** | [`scripts/mailer.js`](scripts/mailer.js) | Gmail SMTP로 매물·구매 링크·빠른 채팅 버튼 발송 |
+| 🐙 **이슈** | [`scripts/github.js`](scripts/github.js) | 신규 매물을 `당근마켓-알림` 라벨 이슈로 등록 |
+| 🌐 **등록 UI** | [`docs/`](docs) | 홈/관리자(지역 드롭다운)·빠른 채팅 도우미 (GitHub Pages) |
+| ⏰ **자동화** | [`daangn-alert.yml`](.github/workflows/daangn-alert.yml) | 매 15분 cron으로 전 과정 실행·상태 커밋 |
+
+---
+
+## 동작 흐름 (Operation Flow)
+
+매 15분, GitHub Actions가 아래 순서로 실행합니다. 각 감시 항목/알림 채널은 독립적으로
+실패를 흡수하므로 한 항목이 실패해도 나머지는 계속 진행됩니다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CR as ⏰ Actions cron
+    participant PP as 🐍 check_daangn.js
+    participant DG as 🌐 당근마켓
+    participant DB as 🗂️ seen.json
+    participant ML as ✉️ Gmail SMTP
+    participant GH as 🐙 GitHub 이슈
+
+    CR->>PP: 매 15분 실행
+    loop 감시 항목마다
+        PP->>DG: 키워드로 검색
+        DG-->>PP: 매물 목록(제목·가격·지역·링크)
+        PP->>PP: 키워드+지역 필터
+        PP->>DB: 이미 본 매물 ID 조회
+        DB-->>PP: seen 목록
+        alt 신규 매물 있음
+            PP->>ML: 매물 요약 이메일 발송
+            PP->>GH: 신규 매물 이슈 등록
+            PP->>DB: seen.json 갱신
+        else 신규 없음
+            PP-->>PP: 건너뜀
+        end
+    end
+    Note over DB: 워크플로가 seen.json 변경분 커밋
+```
+
+1. **검색** — `check_daangn.js`가 각 감시 항목의 키워드로 당근마켓을 검색·파싱합니다.
+2. **필터** — 제목에 키워드가 있고 지역이 일치하는(미입력 시 전국) 매물만 남깁니다.
+3. **선별** — `state/seen.json`과 비교해 아직 알리지 않은 신규 매물만 고릅니다.
+4. **알림** — 이메일과 GitHub 이슈로 각각 발송(하나라도 성공하면 상태 갱신).
+5. **기록** — `seen.json`을 갱신·커밋해 다음 실행 때 중복 알림을 막습니다.
+
+---
+
+## 데이터 플로 (Data Flow)
+
+데이터는 **감시 설정 → 검색 결과 → 신규 매물 → 알림/상태**로 흐릅니다. `watches.json`과
+`seen.json` 두 파일이 진실의 원천이며, 홈페이지·관리자는 `watches.json`을, 워크플로는
+`seen.json`을 읽고 씁니다.
+
+```mermaid
+flowchart TD
+    U["🙋 사용자"] -->|키워드·지역·이메일 입력| ADMIN["🌐 docs/admin.html"]
+    ADMIN -->|GitHub API 커밋| CFG[("📄 config/watches.json")]
+
+    CFG -->|감시 항목 로드| RUN["🐍 check_daangn.js"]
+    DAANGN["🌐 당근마켓 검색 HTML"] -->|fetch| PARSE["📡 파싱된 매물 배열"]
+    RUN --> PARSE
+    PARSE -->|키워드+지역 필터| MATCH["✅ 조건 일치 매물"]
+    SEEN[("🗂️ state/seen.json")] -->|본 매물 ID| MATCH
+    MATCH -->|seen에 없는 것| NEW["🆕 신규 매물"]
+
+    NEW -->|HTML 이메일| EMAIL["✉️ 수신 이메일함"]
+    NEW -->|이슈 본문| ISSUE["🐙 GitHub Issues"]
+    NEW -->|매물 URL + 인사말| CHAT["💬 chat.html 딥링크"]
+    NEW -->|ID 누적| SEEN
+
+    EMAIL -.->|빠른 채팅 버튼| CHAT
+    ISSUE -.->|빠른 채팅 링크| CHAT
+    CHAT -.->|채팅하기| DAANGN
+
+    style CFG fill:#dcfce7,stroke:#22c55e,color:#14532d
+    style SEEN fill:#dcfce7,stroke:#22c55e,color:#14532d
+    style NEW fill:#e9d5ff,stroke:#a855f7,color:#581c87
+    style EMAIL fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    style ISSUE fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+```
+
+| 데이터 | 위치 | 역할 |
+|---|---|---|
+| 감시 설정 | `config/watches.json` | 키워드·지역·이메일·인사말 (홈/관리자가 기록) |
+| 검색 결과 | (메모리) | 당근 검색 HTML을 파싱한 매물 배열 |
+| 신규 매물 | (메모리) | 필터 통과 & `seen`에 없는 매물 |
+| 중복 방지 상태 | `state/seen.json` | 감시 항목별 이미 알린 매물 ID (워크플로가 커밋) |
+| 알림 결과 | 이메일 / GitHub 이슈 | 매물 정보 + 구매 링크 + 빠른 채팅 도우미 |
+
+---
+
 ## 구성
 
 | 경로 | 설명 |
@@ -21,21 +166,8 @@
 | `state/seen.json` | 이미 알림 보낸 매물 ID (중복 방지, 워크플로가 자동 커밋) |
 | `.github/workflows/daangn-alert.yml` | 15분마다 실행되는 GitHub Actions |
 
-## 동작 방식
-
-```
-GitHub Actions (매 15분, cron)
-   └─ scripts/check_daangn.js
-        ├─ config/watches.json 의 각 감시 항목 읽기
-        ├─ 당근마켓에서 키워드로 검색 → 매물 파싱
-        ├─ "제목에 키워드 포함 AND 지역 일치" 로 필터
-        │    (지역 미입력 시 전국 대상)
-        ├─ state/seen.json 과 비교해 신규 매물만 선별
-        ├─ 신규 매물 발견 시:
-        │    ├─ GitHub 이슈 등록 (라벨: 당근마켓-알림)
-        │    └─ Gmail SMTP 로 이메일 발송
-        └─ state/seen.json 갱신 후 커밋
-```
+> 전체 동작은 위의 [한눈에 보기](#-한눈에-보기) · [동작 흐름](#동작-흐름-operation-flow) ·
+> [데이터 플로](#데이터-플로-data-flow) 다이어그램을 참고하세요.
 
 ---
 
