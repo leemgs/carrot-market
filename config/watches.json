@@ -17,6 +17,13 @@
       "location": "수원시",
       "email": "leemgs@gmail.com",
       "enabled": true
+    },
+    {
+      "id": "맥북-에어-13-m5-수원시",
+      "keyword": "맥북 에어 13 M5",
+      "location": "수원시",
+      "email": "leemgs@gmail.com",
+      "enabled": true
     }
   ]
 }
