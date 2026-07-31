@@ -6,24 +6,24 @@
   "createIssues": true,
   "watches": [
     {
-      "id": "gamasot-jeonguk",
+      "id": "가마솥-수원시영통구",
       "keyword": "가마솥",
-      "location": "",
+      "location": "수원시영통구",
       "email": "leemgs@gmail.com",
       "chatMessage": "안녕하세요. 제가 구매 가능할까요?",
       "enabled": true
     },
     {
-      "id": "고추대-전국",
+      "id": "고추대-수원시영통구",
       "keyword": "고추대",
-      "location": "",
+      "location": "수원시영통구",
       "email": "leemgs@gmail.com",
       "enabled": true
     },
     {
-      "id": "맥북-에어-13-m5",
+      "id": "맥북-에어-13-m5-경기도",
       "keyword": "맥북 에어 13 M5",
-      "location": "",
+      "location": "경기도",
       "email": "leemgs@gmail.com",
       "enabled": true
     }
