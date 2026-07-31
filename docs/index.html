@@ -53,7 +53,11 @@
         </label>
         <label>
           구매 가능 위치 (지역)
-          <input id="location" type="text" placeholder="예: 수원시" required />
+          <div class="row">
+            <select id="location-sido" style="flex:1;"></select>
+            <select id="location-sigungu" style="flex:1;"></select>
+          </div>
+          <span class="hint" style="font-weight:400;">지역을 비우면(전국) 전국 매물을 조회합니다.</span>
         </label>
         <label>
           알림 받을 이메일
@@ -113,6 +117,7 @@
     </p>
   </footer>
 
+  <script src="./assets/regions.js"></script>
   <script src="./assets/app.js"></script>
 </body>
 </html>

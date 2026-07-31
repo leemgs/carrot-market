@@ -48,14 +48,17 @@ main { padding: 28px 0; }
 
 form { display: flex; flex-direction: column; gap: 14px; }
 label { display: flex; flex-direction: column; font-weight: 600; font-size: 14px; gap: 6px; }
-input {
+input, select {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 16px;
   font-weight: 400;
+  background: #fff;
+  width: 100%;
 }
-input:focus { outline: 2px solid var(--carrot); border-color: var(--carrot); }
+select:disabled { background: #f1f3f5; color: var(--muted); }
+input:focus, select:focus { outline: 2px solid var(--carrot); border-color: var(--carrot); }
 
 button, .button-link {
   display: inline-block;

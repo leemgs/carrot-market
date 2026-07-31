@@ -25,6 +25,9 @@ const connStatus = $('conn-status');
 const saveStatus = $('save-status');
 const tbody = $('watch-tbody');
 
+// 지역 선택 드롭다운(시/도 → 시/군/구)
+const regionPicker = createRegionPicker($('f-sido'), $('f-sigungu'));
+
 // ------- 초기화: 저장된 값 복원 -------
 tokenEl.value = localStorage.getItem(LS_TOKEN) || '';
 repoEl.value = localStorage.getItem(LS_REPO) || DEFAULT_REPO;
@@ -209,7 +212,7 @@ function openEdit(index) {
   $('edit-index').value = index;
   const w = isNew ? {} : data.watches[index];
   $('f-keyword').value = w.keyword || '';
-  $('f-location').value = w.location || '';
+  regionPicker.setValue(w.location || '');
   $('f-email').value = w.email || '';
   $('f-msg').value = w.chatMessage || '';
   $('f-enabled').checked = w.enabled !== false;
@@ -223,7 +226,7 @@ $('edit-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const index = +$('edit-index').value;
   const keyword = $('f-keyword').value.trim();
-  const location = $('f-location').value.trim();
+  const location = regionPicker.getValue();
   const entry = {
     id: slugId(keyword, location),
     keyword,

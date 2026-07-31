@@ -16,6 +16,12 @@ const repoLink = document.getElementById('repo-link');
 if (repoLink) repoLink.href = `https://github.com/${REPO}`;
 editLink.href = `https://github.com/${REPO}/edit/${BRANCH}/${CONFIG_PATH}`;
 
+// 지역 선택 드롭다운(시/도 → 시/군/구)
+const regionPicker = createRegionPicker(
+  document.getElementById('location-sido'),
+  document.getElementById('location-sigungu')
+);
+
 // 키워드+지역을 조합해 사람이 읽기 쉬운 id 생성
 function makeId(keyword, location) {
   const base = `${keyword}-${location}`
@@ -29,7 +35,7 @@ form.addEventListener('submit', (e) => {
   e.preventDefault();
 
   const keyword = document.getElementById('keyword').value.trim();
-  const location = document.getElementById('location').value.trim();
+  const location = regionPicker.getValue();
   const email = document.getElementById('email').value.trim();
 
   const watch = {
