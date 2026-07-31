@@ -177,15 +177,25 @@ flowchart TD
 1. 발신용 Gmail 계정에서 **2단계 인증**을 켭니다.
 2. [앱 비밀번호](https://support.google.com/accounts/answer/185833)에서 16자리 비밀번호를 발급합니다.
 
-### 2. GitHub Secrets 등록
-저장소 **Settings → Secrets and variables → Actions → New repository secret** 에서 등록:
+### 2. GitHub Secrets / Variables 등록
+저장소 **Settings → Secrets and variables → Actions** 에서 등록합니다.
+
+**Secrets** 탭 (`New repository secret`) — 민감정보:
+
+| 이름 | 값 |
+| --- | --- |
+| `GMAIL_APP_PASSWORD` | 위에서 발급한 앱 비밀번호(16자리) |
+
+**Variables** 탭 (`New repository variable`) — 비민감정보:
 
 | 이름 | 값 |
 | --- | --- |
 | `GMAIL_USER` | 발신 Gmail 주소 (예: `myname@gmail.com`) |
-| `GMAIL_APP_PASSWORD` | 위에서 발급한 앱 비밀번호(16자리) |
+| `MAIL_FROM_NAME` | (선택) 발신자 표시 이름 |
 
-(선택) **Variables** 탭에서 `MAIL_FROM_NAME` 을 등록하면 발신자 표시 이름을 바꿀 수 있습니다.
+> ℹ️ `GMAIL_USER` 는 이메일 주소일 뿐 민감정보가 아니므로 **Variables** 에 두는 것을 권장합니다.
+> 워크플로는 `vars.GMAIL_USER` 를 먼저 읽고 없으면 `secrets.GMAIL_USER` 로 폴백하므로,
+> 둘 중 **어느 쪽에 등록해도** 동작합니다. `GMAIL_APP_PASSWORD` 는 반드시 **Secrets** 에 두세요.
 
 ### 3. 감시 항목 등록
 
