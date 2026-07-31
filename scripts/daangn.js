@@ -12,6 +12,14 @@
  * 마크업이 바뀌면 parseItems() 내부의 추출기만 손보면 된다.
  */
 
+// 시/도 → 시/군/구 → 읍/면/동 데이터 (시 단위 입력을 동 목록으로 확장해 매칭)
+let REGIONS = {};
+try {
+  REGIONS = require('./regions-data');
+} catch (_) {
+  /* 데이터 파일이 없어도 기본 매칭은 동작 */
+}
+
 // 검색 URL 템플릿. {kw} 는 URL 인코딩된 키워드로 치환된다.
 // 환경변수 DAANGN_SEARCH_URL 로 재정의 가능.
 const DEFAULT_SEARCH_URL = 'https://www.daangn.com/kr/buy-sell/?search={kw}';
@@ -148,10 +156,18 @@ function matchField(win, keys) {
   return '';
 }
 
+// 카드 본문 텍스트에서 동네(…동/읍/면/가) 토큰을 추출. 태그/JSON 경계를 넘지 않도록
+// 링크 직후 구간에서 뒤에 한글이 붙지 않는 첫 지역 토큰을 찾는다.
+function extractNeighborhood(s) {
+  const m = String(s).match(/([가-힣]{2,}[0-9]{0,2}(?:동|읍|면|가))(?![가-힣])/);
+  return m ? m[1] : '';
+}
+
 // 텍스트(HTML/JSON)에서 매물 URL 을 찾아 주변 창(window)에서 필드를 추출
 function extractFromText(text, add) {
+  // 슬러그 전체를 탐욕적으로 잡아 마지막 하이픈 세그먼트(진짜 id)까지 포함시킨다.
   const urlRe =
-    /(?:https?:\/\/www\.daangn\.com)?\/(?:kr\/buy-sell\/[^"'\\\s)]*?-[0-9a-zA-Z]{5,}|articles\/\d+)\/?/g;
+    /(?:https?:\/\/www\.daangn\.com)?\/(?:kr\/buy-sell\/[^"'\\\s)]*-[0-9a-zA-Z]{5,}|articles\/\d+)\/?/g;
   let m;
   while ((m = urlRe.exec(text)) !== null) {
     const href = m[0];
@@ -162,11 +178,14 @@ function extractFromText(text, add) {
     const win = text.slice(start, end);
     const price =
       matchField(win, ['price']) || (win.match(/([0-9][0-9,]{2,})\s*원/) || [])[1] || '';
+    // 지역: JSON 필드 우선, 없으면 링크 뒤쪽(카드 본문)에서 동네(…동/읍/면/가) 추출
+    let region = matchField(win, ['regionName', 'region', 'address', 'areaName', 'location']);
+    if (!region) region = extractNeighborhood(text.slice(m.index, m.index + 900));
     add({
       id,
       title: matchField(win, ['title', 'name', 'subject']),
       price,
-      region: matchField(win, ['regionName', 'region', 'address', 'areaName', 'location']),
+      region,
       url: absolutize(href),
       image: '',
     });
@@ -215,6 +234,26 @@ function locationVariants(location) {
   return [...variants];
 }
 
+// 시/도·시/군/구 입력을 그 안의 읍/면/동 이름 집합으로 확장 (당근은 동 이름으로 표기)
+const _dongCache = new Map();
+function dongsForLocation(location) {
+  const n = normalize(location);
+  if (!n) return _EMPTY_SET;
+  if (_dongCache.has(n)) return _dongCache.get(n);
+  const set = new Set();
+  for (const sido of Object.keys(REGIONS)) {
+    const nsido = normalize(sido);
+    for (const sgg of Object.keys(REGIONS[sido])) {
+      const nsgg = normalize(sgg);
+      const hit = n === nsido || n === nsgg || nsgg.startsWith(n) || n.startsWith(nsgg);
+      if (hit) for (const d of REGIONS[sido][sgg]) set.add(normalize(d));
+    }
+  }
+  _dongCache.set(n, set);
+  return set;
+}
+const _EMPTY_SET = new Set();
+
 /**
  * 매물이 (제목에 키워드 포함) AND (지역 일치) 조건을 만족하는지.
  * - 지역 미입력 = 전국(지역 조건 없음)
@@ -241,6 +280,12 @@ function matchesWatch(item, watch) {
   const hay = normalize(`${item.region} ${item.title}`);
   const variants = locationVariants(watch.location);
   if (variants.some((v) => hay.includes(v))) return true;
+
+  // 시/구 단위 입력 → 그 안의 동 이름이 매물 지역/제목에 있으면 매칭
+  for (const d of dongsForLocation(watch.location)) {
+    if (d.length >= 2 && hay.includes(d)) return true;
+  }
+
   if (!item.region && process.env.STRICT_REGION === 'false') return true;
   return false;
 }
