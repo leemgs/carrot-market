@@ -123,6 +123,8 @@ function render() {
 
   $('default-email').value = data.defaultEmail || '';
   $('default-msg').value = data.defaultChatMessage || '';
+  $('opt-email').checked = data.sendEmail !== false;
+  $('opt-issue').checked = data.createIssues !== false;
 
   const watches = data.watches;
   $('count').textContent = watches.length;
@@ -190,6 +192,8 @@ tbody.addEventListener('change', (e) => {
 // ------- 이벤트: 기본값 입력 반영 -------
 $('default-email').addEventListener('input', (e) => (data.defaultEmail = e.target.value.trim()));
 $('default-msg').addEventListener('input', (e) => (data.defaultChatMessage = e.target.value.trim()));
+$('opt-email').addEventListener('change', (e) => (data.sendEmail = e.target.checked));
+$('opt-issue').addEventListener('change', (e) => (data.createIssues = e.target.checked));
 
 // ------- 이벤트: 추가/수정 폼 -------
 function slugId(keyword, location) {

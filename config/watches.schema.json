@@ -12,6 +12,16 @@
       "type": "string",
       "description": "watch 에 chatMessage 가 없을 때 사용할 기본 채팅 인사말"
     },
+    "sendEmail": {
+      "type": "boolean",
+      "description": "신규 매물 발견 시 이메일 발송 여부 (기본 true)",
+      "default": true
+    },
+    "createIssues": {
+      "type": "boolean",
+      "description": "신규 매물 발견 시 GitHub 이슈 등록 여부 (기본 true)",
+      "default": true
+    },
     "watches": {
       "type": "array",
       "items": {

@@ -100,8 +100,7 @@ function parseItems(html) {
     }
   }
 
-  // --- 2) 매물 링크 기반 폴백 파싱 ---
-  // /kr/buy-sell/....-<id>/ 또는 /articles/<id> 형태의 링크를 찾는다.
+  // --- 2) <a> 태그 기반 매물 카드 파싱 ---
   const linkRe =
     /<a[^>]+href="((?:https?:\/\/[^"]+)?\/(?:kr\/buy-sell|articles)\/[^"]*?)"[^>]*>([\s\S]*?)<\/a>/gi;
   let m;
@@ -121,35 +120,104 @@ function parseItems(html) {
     });
   }
 
+  // --- 3) 임베드 JSON / RSC 스트림 파싱 ---
+  // 최신 당근 웹은 Next.js RSC 스트림(self.__next_f.push[...])에 매물 데이터를
+  // 이스케이프된 문자열로 담는다. 원본과 언이스케이프본 양쪽에서 매물 URL과
+  // 주변 필드(title/price/region)를 추출한다.
+  extractFromText(html, add);
+  extractFromText(deEscape(html), add);
+
   return Array.from(byId.values());
+}
+
+// 이스케이프된 JSON 문자열( /, \" 등 )을 실제 문자로 복원
+function deEscape(s) {
+  return String(s)
+    .replace(/\\u002[fF]/g, '/')
+    .replace(/\\u0026/g, '&')
+    .replace(/\\\//g, '/')
+    .replace(/\\"/g, '"');
+}
+
+// 특정 키들 중 먼저 매칭되는 문자열 값을 반환
+function matchField(win, keys) {
+  for (const k of keys) {
+    const mm = win.match(new RegExp('"' + k + '"\\s*:\\s*"([^"]{1,120})"', 'i'));
+    if (mm) return mm[1];
+  }
+  return '';
+}
+
+// 텍스트(HTML/JSON)에서 매물 URL 을 찾아 주변 창(window)에서 필드를 추출
+function extractFromText(text, add) {
+  const urlRe =
+    /(?:https?:\/\/www\.daangn\.com)?\/(?:kr\/buy-sell\/[^"'\\\s)]*?-[0-9a-zA-Z]{5,}|articles\/\d+)\/?/g;
+  let m;
+  while ((m = urlRe.exec(text)) !== null) {
+    const href = m[0];
+    const id = extractIdFromUrl(href);
+    if (!id) continue;
+    const start = Math.max(0, m.index - 500);
+    const end = Math.min(text.length, m.index + 500);
+    const win = text.slice(start, end);
+    const price =
+      matchField(win, ['price']) || (win.match(/([0-9][0-9,]{2,})\s*원/) || [])[1] || '';
+    add({
+      id,
+      title: matchField(win, ['title', 'name', 'subject']),
+      price,
+      region: matchField(win, ['regionName', 'region', 'address', 'areaName', 'location']),
+      url: absolutize(href),
+      image: '',
+    });
+  }
 }
 
 /* ------------------------- 필터링 ------------------------- */
 
 /**
- * 매물이 (제목에 키워드 포함) AND (지역에 location 포함) 조건을 만족하는지.
- * region 정보가 비어있는 경우엔 지역 조건을 통과시키지 않는다(오탐 방지),
- * 단 STRICT_REGION=false 이면 통과시킨다.
+ * 지역 미입력(또는 '전국'/'전체')이면 전국 검색으로 간주.
+ */
+function isNationwide(location) {
+  const loc = normalize(location);
+  return !loc || loc === '전국' || loc === '전체' || loc === 'all';
+}
+
+/**
+ * 지역 문자열의 매칭 후보들을 만든다.
+ * 당근은 매물 위치를 '수원시 영통구' 처럼 전체로 주기도, '영통동' 처럼 동만 주기도 한다.
+ * 그래서 입력값과 행정구역 접미사를 뗀 어간(수원시 -> 수원)을 모두 후보로 사용한다.
+ */
+function locationVariants(location) {
+  const loc = normalize(location);
+  if (!loc) return [];
+  const variants = new Set([loc]);
+  const stem = loc.replace(
+    /(특별자치시|특별자치도|특별시|광역시|시|군|구|읍|면|동|리)$/,
+    ''
+  );
+  if (stem && stem.length >= 2 && stem !== loc) variants.add(stem);
+  return [...variants];
+}
+
+/**
+ * 매물이 (제목에 키워드 포함) AND (지역 일치) 조건을 만족하는지.
+ * - 지역 미입력 = 전국(지역 조건 없음)
+ * - 지역 입력 시: 매물 지역/제목에 지역명(또는 어간)이 포함되면 통과
+ * - 매물에 지역 정보가 아예 없을 땐 기본 제외(STRICT_REGION=false 면 통과)
  */
 function matchesWatch(item, watch) {
   const kw = normalize(watch.keyword);
-  const loc = normalize(watch.location);
-
   const titleOk = kw ? normalize(item.title).includes(kw) : true;
+  if (!titleOk) return false;
 
-  let regionOk = true;
-  if (loc) {
-    const hay = normalize(`${item.region} ${item.title}`);
-    if (hay.includes(loc)) {
-      regionOk = true;
-    } else if (!item.region && process.env.STRICT_REGION === 'false') {
-      regionOk = true; // 지역 정보가 없을 때 관대하게 처리(옵션)
-    } else {
-      regionOk = false;
-    }
-  }
+  if (isNationwide(watch.location)) return true; // 지역 미입력 → 전국
 
-  return titleOk && regionOk;
+  const hay = normalize(`${item.region} ${item.title}`);
+  const variants = locationVariants(watch.location);
+  if (variants.some((v) => hay.includes(v))) return true;
+  if (!item.region && process.env.STRICT_REGION === 'false') return true;
+  return false;
 }
 
 /**
@@ -160,7 +228,18 @@ function matchesWatch(item, watch) {
 async function searchDaangn(watch) {
   const html = await fetchSearchHtml(watch.keyword);
   const items = parseItems(html);
-  return items.filter((it) => matchesWatch(it, watch));
+  const matched = items.filter((it) => matchesWatch(it, watch));
+
+  if (process.env.DEBUG === 'true') {
+    console.log(
+      `    [DEBUG] HTML ${html.length}자, 파싱된 매물 ${items.length}건, 매칭 ${matched.length}건` +
+        (isNationwide(watch.location) ? ' (전국 검색)' : '')
+    );
+    items.slice(0, 5).forEach((it) =>
+      console.log(`    [DEBUG] · ${it.title || '(제목없음)'} | ${it.region || '-'} | ${it.url}`)
+    );
+  }
+  return matched;
 }
 
 /* ------------------------- 헬퍼 ------------------------- */

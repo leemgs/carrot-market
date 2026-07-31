@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const { searchDaangn } = require('./daangn');
 const { sendNewItemsEmail } = require('./mailer');
+const { createIssue } = require('./github');
 
 const ROOT = path.resolve(__dirname, '..');
 const CONFIG_PATH = path.join(ROOT, 'config', 'watches.json');
@@ -50,6 +51,10 @@ async function main() {
     console.log('감시 항목이 없습니다. config/watches.json 을 확인하세요.');
     return;
   }
+
+  // 알림 채널 on/off (config 에서 명시적으로 false 로 꺼야 비활성)
+  const wantEmail = config.sendEmail !== false;
+  const wantIssue = config.createIssues !== false;
 
   const state = readJson(STATE_PATH, {});
   let stateChanged = false;
@@ -102,16 +107,39 @@ async function main() {
       newItems.forEach((it) =>
         console.log(`    - ${it.title} | ${it.price} | ${it.region} | ${it.url}`)
       );
-    } else {
+      // DRY_RUN 에서는 알림/상태갱신을 하지 않는다.
+      continue;
+    }
+
+    // 두 채널(이슈/이메일)을 각각 시도한다. 하나라도 성공하면 "알림함"으로 간주.
+    let notified = false;
+
+    if (wantIssue) {
+      try {
+        const issue = await createIssue({ watch, items: newItems, chatMessage });
+        console.log(`  🐙 GitHub 이슈 등록 완료 → #${issue.number} ${issue.html_url}`);
+        notified = true;
+      } catch (err) {
+        console.error(`  ✖ 이슈 등록 실패: ${err.message}`);
+        errors.push(`${id} 이슈: ${err.message}`);
+      }
+    }
+
+    if (wantEmail) {
       try {
         await sendNewItemsEmail({ to, watch, items: newItems, chatMessage });
         console.log(`  ✉ 이메일 발송 완료 → ${to}`);
+        notified = true;
       } catch (err) {
         console.error(`  ✖ 이메일 발송 실패: ${err.message}`);
         errors.push(`${id} 이메일: ${err.message}`);
-        // 발송 실패 시 상태를 갱신하지 않아 다음 실행 때 재시도한다.
-        continue;
       }
+    }
+
+    if (!notified) {
+      // 모든 알림 채널이 실패하면 상태를 갱신하지 않아 다음 실행 때 재시도한다.
+      console.warn('  ⚠ 알림 실패로 상태를 갱신하지 않습니다(다음 실행에 재시도).');
+      continue;
     }
 
     // 상태 갱신: 이번에 조건 일치한 모든 매물 ID 를 기록 (신규 + 기존)

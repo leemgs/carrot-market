@@ -2,6 +2,8 @@
   "$schema": "./watches.schema.json",
   "defaultEmail": "leemgs@gmail.com",
   "defaultChatMessage": "안녕하세요. 제가 구매 가능할까요?",
+  "sendEmail": true,
+  "createIssues": true,
   "watches": [
     {
       "id": "gamasot-suwon",

@@ -9,13 +9,18 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: '이메일을 실제로 보내지 않고 로그만 출력'
+        description: '이메일/이슈를 실제로 보내지 않고 로그만 출력'
+        type: boolean
+        default: false
+      debug:
+        description: '파싱 진단 로그 출력(DEBUG)'
         type: boolean
         default: false
 
-# state/seen.json 커밋을 위해 쓰기 권한 필요
+# state/seen.json 커밋(contents) 및 이슈 생성(issues) 권한 필요
 permissions:
   contents: write
+  issues: write
 
 # 동시에 여러 실행이 겹쳐 state 커밋이 충돌하지 않도록 직렬화
 concurrency:
@@ -45,7 +50,11 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME }}
           CHAT_HELPER_URL: ${{ vars.CHAT_HELPER_URL }}
+          # 이슈 등록용 (Actions 가 자동 제공하는 토큰/저장소명)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
+          DEBUG: ${{ github.event.inputs.debug }}
         run: node check_daangn.js
 
       - name: 변경된 상태(state) 커밋
