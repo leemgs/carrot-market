@@ -162,11 +162,16 @@ function render() {
 
   watches.forEach((w, i) => {
     const tr = document.createElement('tr');
+    const emails = parseEmails(w.email);
+    const emailCell = emails.length
+      ? emails.map((e) => `<span class="email-chip">${esc(e)}</span>`).join('') +
+        (emails.length > 1 ? `<span class="email-count">${emails.length}명</span>` : '')
+      : '<span class="muted-hint">(기본값)</span>';
     tr.innerHTML = `
       <td><input type="checkbox" data-toggle="${i}" ${w.enabled === false ? '' : 'checked'}></td>
       <td><b>${esc(w.keyword)}</b></td>
       <td>${esc(w.location)}</td>
-      <td class="muted-cell">${w.email ? esc(formatEmails(w.email)) : '(기본값)'}</td>
+      <td class="email-cell">${emailCell}</td>
       <td class="muted-cell">${esc(w.chatMessage || '(기본값)')}</td>
       <td class="actions">
         <button type="button" class="mini" data-edit="${i}">수정</button>
