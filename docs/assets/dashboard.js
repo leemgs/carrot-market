@@ -74,11 +74,18 @@
       $('stat-last-sub').textContent = '아직 알림이 없습니다';
     }
 
-    // 최근 알림 5건
-    const recent = issues
+    // 키워드별로 "가장 최근" 알림 1건만 남긴다 (같은 키워드 중복 제거).
+    const sorted = issues
       .slice()
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5);
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const seenKw = new Set();
+    const recent = [];
+    for (const it of sorted) {
+      const key = it.keyword || it.rawTitle;
+      if (seenKw.has(key)) continue;
+      seenKw.add(key);
+      recent.push(it);
+    }
 
     if (!recent.length) {
       listEl.innerHTML =
