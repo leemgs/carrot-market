@@ -85,24 +85,7 @@
         '<p class="state-msg">아직 매물 알림이 없습니다. 신규 매물이 발견되면 여기에 표시됩니다.</p>';
       return;
     }
-    listEl.innerHTML = recent.map(issueCard).join('');
-  }
-
-  function issueCard(it) {
-    const badge =
-      it.state === 'open'
-        ? '<span class="badge open">열림</span>'
-        : '<span class="badge closed">닫힘</span>';
-    const cnt = it.count != null ? `<span class="badge count">${it.count}건</span>` : '';
-    const kw = it.keyword ? `<b>${esc(it.keyword)}</b>` : esc(it.rawTitle);
-    const loc = it.location ? ` · ${esc(it.location)}` : '';
-    return (
-      `<a class="issue-item" href="${esc(it.url)}" target="_blank" rel="noopener">` +
-      `<div class="issue-top">${badge}${cnt}<span class="issue-title">${kw}${loc}</span></div>` +
-      `<div class="issue-meta"><span>#${it.number}</span>` +
-      `<span>${GHData.fmtRelative(it.createdAt)}</span>` +
-      `<span>${GHData.fmtDate(it.createdAt)}</span></div></a>`
-    );
+    listEl.innerHTML = recent.map(GHData.issueCardHtml).join('');
   }
 
   load();

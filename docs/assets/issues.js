@@ -44,25 +44,7 @@
         '<p class="state-msg">조건에 맞는 알림이 없습니다.</p>';
       return;
     }
-    listEl.innerHTML = rows.map(card).join('');
-  }
-
-  function card(it) {
-    const badge =
-      it.state === 'open'
-        ? '<span class="badge open">열림</span>'
-        : '<span class="badge closed">닫힘</span>';
-    const cnt = it.count != null ? `<span class="badge count">${it.count}건</span>` : '';
-    const kw = it.keyword ? `<b>${esc(it.keyword)}</b>` : esc(it.rawTitle);
-    const loc = it.location ? esc(it.location) : '전국';
-    return (
-      `<a class="issue-item" href="${esc(it.url)}" target="_blank" rel="noopener">` +
-      `<div class="issue-top">${badge}${cnt}<span class="issue-title">${kw}</span></div>` +
-      `<div class="issue-meta"><span>📍 <b>${loc}</b></span>` +
-      `<span>#${it.number}</span>` +
-      `<span>🕑 ${GHData.fmtRelative(it.createdAt)}</span>` +
-      `<span>${GHData.fmtDate(it.createdAt)}</span></div></a>`
-    );
+    listEl.innerHTML = rows.map(GHData.issueCardHtml).join('');
   }
 
   // 상태 세그먼트 버튼

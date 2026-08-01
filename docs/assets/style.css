@@ -284,3 +284,18 @@ footer a { color: var(--carrot-dark); }
 /* 대시보드에서는 hero를 조금 더 컴팩트하게 */
 .hero.slim { padding: 30px 0 26px; }
 .hero.slim h1 { font-size: 24px; }
+
+/* ---- 이슈 카드 안의 매물 테이블 ---- */
+.issue-item.static { cursor: default; }
+.issue-item.static:hover { border-color: var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.issue-link { margin-left: auto; font-size: 12px; color: var(--carrot-dark); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.issue-link:hover { text-decoration: underline; }
+
+.item-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+.item-table th, .item-table td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.item-table th { font-size: 11px; color: var(--muted); font-weight: 700; background: #fafbfc; }
+.item-table td.it-title { white-space: normal; min-width: 150px; max-width: 320px; font-weight: 600; color: var(--ink); }
+.item-table td { color: var(--muted); }
+.item-table a { color: var(--carrot-dark); text-decoration: none; font-weight: 600; }
+.item-table a:hover { text-decoration: underline; }
+.item-table tr:last-child td { border-bottom: none; }
