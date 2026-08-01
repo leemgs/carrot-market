@@ -79,7 +79,7 @@ function parseItems(html) {
     byId.set(id, {
       id,
       title: item.title || existing.title || '',
-      price: item.price || existing.price || '',
+      price: formatPrice(item.price || existing.price || ''),
       region: item.region || existing.region || '',
       url: item.url || existing.url || `${BASE_URL}/kr/buy-sell/${id}/`,
       image: item.image || existing.image || '',
@@ -365,6 +365,26 @@ function extractIdFromUrl(url) {
   const mGeneric = String(url).match(/\/([0-9a-zA-Z]{6,})\/?(?:[?#]|$)/);
   if (mGeneric) return mGeneric[1];
   return '';
+}
+
+// 가격 값을 "16,000원" 형태로 정규화한다.
+//  - "16000.0", "16000.0 KRW", "16,000원" → "16,000원"
+//  - 0 → "나눔"
+//  - "나눔", "가격 제안" 등 숫자가 아닌 표기는 소수 꼬리만 정리해 그대로 둔다.
+function formatPrice(raw) {
+  if (raw == null) return '';
+  let s = String(raw).trim();
+  if (!s) return '';
+  s = s.replace(/\bKRW\b/gi, '').replace(/\s+/g, ' ').trim();
+  // 숫자(콤마/소수점 허용) + 선택적 "원" 만으로 이루어진 경우
+  if (/^[\d,]+(?:\.\d+)?\s*원?$/.test(s)) {
+    const n = Math.round(parseFloat(s.replace(/[,원\s]/g, '')));
+    if (!Number.isFinite(n)) return s;
+    if (n === 0) return '나눔';
+    return n.toLocaleString('ko-KR') + '원';
+  }
+  // 텍스트가 섞인 경우: "16000.0" 같은 소수 꼬리만 정리
+  return s.replace(/(\d)\.0+(?!\d)/g, '$1');
 }
 
 function extractPrice(node) {
