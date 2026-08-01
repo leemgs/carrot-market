@@ -46,6 +46,10 @@ form.addEventListener('submit', (e) => {
   // 여러 개면 배열로, 1개면 문자열로 저장
   const email = emails.length > 1 ? emails : emails[0] || '';
 
+  // 희망 금액(이하): 숫자만 추출
+  const maxDigits = document.getElementById('maxprice').value.replace(/[^\d]/g, '');
+  const maxPrice = maxDigits ? parseInt(maxDigits, 10) : 0;
+
   const watch = {
     id: makeId(keyword, location),
     keyword,
@@ -53,6 +57,7 @@ form.addEventListener('submit', (e) => {
     email,
     enabled: true,
   };
+  if (maxPrice > 0) watch.maxPrice = maxPrice;
 
   snippetEl.textContent = JSON.stringify(watch, null, 2);
   result.classList.remove('hidden');
@@ -73,3 +78,12 @@ copyBtn.addEventListener('click', async () => {
     sel.addRange(range);
   }
 });
+
+// 희망 금액 입력 시 천단위 콤마 자동 표시
+const maxPriceInput = document.getElementById('maxprice');
+if (maxPriceInput) {
+  maxPriceInput.addEventListener('input', () => {
+    const d = maxPriceInput.value.replace(/[^\d]/g, '');
+    maxPriceInput.value = d ? parseInt(d, 10).toLocaleString('ko-KR') : '';
+  });
+}

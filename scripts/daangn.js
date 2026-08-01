@@ -76,10 +76,12 @@ function parseItems(html) {
     if (!item || !item.id) return;
     const id = String(item.id);
     const existing = byId.get(id) || {};
+    const rawPrice = item.price || existing.price || '';
     byId.set(id, {
       id,
       title: item.title || existing.title || '',
-      price: formatPrice(item.price || existing.price || ''),
+      price: formatPrice(rawPrice),
+      priceValue: parsePriceValue(rawPrice), // 숫자 가격(원). 불명이면 null
       region: item.region || existing.region || '',
       url: item.url || existing.url || `${BASE_URL}/kr/buy-sell/${id}/`,
       image: item.image || existing.image || '',
@@ -272,8 +274,17 @@ function keywordMatches(title, keyword) {
   return tokens.every((tok) => t.includes(tok));
 }
 
+// 희망 금액(이하) 필터. maxPrice 미설정이면 통과, 가격 불명 매물도 통과(놓치지 않도록).
+function priceWithinMax(item, watch) {
+  const maxP = Number(watch.maxPrice);
+  if (!Number.isFinite(maxP) || maxP <= 0) return true; // 미설정
+  if (!Number.isFinite(item.priceValue)) return true; // 가격 불명 → 통과
+  return item.priceValue <= maxP;
+}
+
 function matchesWatch(item, watch) {
   if (!keywordMatches(item.title, watch.keyword)) return false;
+  if (!priceWithinMax(item, watch)) return false;
 
   if (isNationwide(watch.location)) return true; // 지역 미입력 → 전국
 
@@ -385,6 +396,17 @@ function formatPrice(raw) {
   }
   // 텍스트가 섞인 경우: "16000.0" 같은 소수 꼬리만 정리
   return s.replace(/(\d)\.0+(?!\d)/g, '$1');
+}
+
+// 가격 문자열에서 숫자(원)만 추출한다. 나눔/무료 → 0, 가격 불명 → null.
+function parsePriceValue(raw) {
+  if (raw == null) return null;
+  const s = String(raw).replace(/\bKRW\b/gi, '').trim();
+  if (!s) return null;
+  if (/나눔|무료/.test(s)) return 0;
+  const m = s.replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+  if (!m) return null; // "가격 제안" 등 숫자가 없는 경우
+  return Math.round(parseFloat(m[0]));
 }
 
 function extractPrice(node) {

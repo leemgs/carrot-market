@@ -95,7 +95,7 @@
         <table class="watch-table">
           <thead>
             <tr>
-              <th>사용</th><th>키워드</th><th>지역</th><th>이메일</th><th>인사말</th><th></th>
+              <th>사용</th><th>키워드</th><th>지역</th><th>희망가</th><th>이메일</th><th>인사말</th><th></th>
             </tr>
           </thead>
           <tbody id="watch-tbody"></tbody>
@@ -121,6 +121,11 @@
             <select id="f-dong" style="flex:1;"></select>
           </div>
           <span class="hint" style="font-weight:400;">시/도 → 시/군/구 → 읍/면/동 순으로 좁힐수록 정확합니다. 비우면 전국.</span>
+        </label>
+        <label>
+          희망 금액 (이하) · 원
+          <input id="f-maxprice" type="text" inputmode="numeric" placeholder="예: 100,000 (비우면 금액 제한 없음)" />
+          <span class="hint" style="font-weight:400;">입력한 금액 <b>이하</b>인 매물만 알립니다. 가격이 표기되지 않은 매물은 포함됩니다.</span>
         </label>
         <label>
           알림 받을 이메일 (비우면 기본값 사용)

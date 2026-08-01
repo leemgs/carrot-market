@@ -55,6 +55,21 @@ function emailsToStore(value) {
   return list.length === 1 ? list[0] : list;
 }
 
+// ------- 희망 금액(maxPrice) 처리 -------
+// 입력 문자열에서 숫자만 뽑아 정수(원)로. 없으면 undefined.
+function parseMaxPrice(value) {
+  if (value == null) return undefined;
+  const digits = String(value).replace(/[^\d]/g, '');
+  if (!digits) return undefined;
+  const n = parseInt(digits, 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+// 표시용: 100000 → "100,000원 이하", 없으면 "-"
+function formatMaxPrice(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n.toLocaleString('ko-KR') + '원 이하' : '';
+}
+
 // ------- 초기화: 저장된 값 복원 -------
 tokenEl.value = localStorage.getItem(LS_TOKEN) || '';
 repoEl.value = localStorage.getItem(LS_REPO) || DEFAULT_REPO;
@@ -171,6 +186,7 @@ function render() {
       <td><input type="checkbox" data-toggle="${i}" ${w.enabled === false ? '' : 'checked'}></td>
       <td><b>${esc(w.keyword)}</b></td>
       <td>${esc(w.location)}</td>
+      <td class="muted-cell">${w.maxPrice ? esc(formatMaxPrice(w.maxPrice)) : '-'}</td>
       <td class="email-cell">${emailCell}</td>
       <td class="muted-cell">${esc(w.chatMessage || '(기본값)')}</td>
       <td class="actions">
@@ -245,6 +261,7 @@ function openEdit(index) {
   const w = isNew ? {} : data.watches[index];
   $('f-keyword').value = w.keyword || '';
   regionPicker.setValue(w.location || '');
+  $('f-maxprice').value = w.maxPrice ? Number(w.maxPrice).toLocaleString('ko-KR') : '';
   $('f-email').value = formatEmails(w.email);
   $('f-msg').value = w.chatMessage || '';
   $('f-enabled').checked = w.enabled !== false;
@@ -253,6 +270,12 @@ function openEdit(index) {
 
 $('add-btn').addEventListener('click', () => openEdit(-1));
 $('edit-cancel').addEventListener('click', () => $('edit-card').classList.add('hidden'));
+
+// 희망 금액 입력 시 천단위 콤마 자동 표시
+$('f-maxprice').addEventListener('input', (e) => {
+  const n = parseMaxPrice(e.target.value);
+  e.target.value = n ? n.toLocaleString('ko-KR') : e.target.value.replace(/[^\d]/g, '');
+});
 
 $('edit-form').addEventListener('submit', (e) => {
   e.preventDefault();
@@ -263,6 +286,7 @@ $('edit-form').addEventListener('submit', (e) => {
     id: slugId(keyword, location),
     keyword,
     location,
+    maxPrice: parseMaxPrice($('f-maxprice').value),
     email: emailsToStore($('f-email').value),
     chatMessage: $('f-msg').value.trim() || undefined,
     enabled: $('f-enabled').checked,

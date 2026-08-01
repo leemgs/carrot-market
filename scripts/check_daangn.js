@@ -101,7 +101,11 @@ async function main() {
       continue;
     }
 
-    console.log(`\n▶ 검색: 키워드='${watch.keyword}' 지역='${watch.location || '(전체)'}' → ${to.join(', ')}`);
+    const priceNote =
+      Number(watch.maxPrice) > 0 ? ` 희망가='≤${Number(watch.maxPrice).toLocaleString('ko-KR')}원'` : '';
+    console.log(
+      `\n▶ 검색: 키워드='${watch.keyword}' 지역='${watch.location || '(전체)'}'${priceNote} → ${to.join(', ')}`
+    );
 
     let found;
     try {
