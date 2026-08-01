@@ -13,7 +13,7 @@
 
 감시 목록(`config/watches.json`)을 기준으로 당근마켓을 **검색**하고, 신규 매물만 **선별**해
 **이메일·GitHub 이슈** 두 갈래로 **알림**을 보내는 단일 파이프라인입니다. GitHub Actions가
-15분마다 돌립니다.
+실행되면 **한 job 안에서 약 3분마다 반복 점검**하여 신규 매물을 빠르게 잡아냅니다.
 
 ```mermaid
 flowchart LR
@@ -46,7 +46,7 @@ flowchart LR
     DF --> ISSUE
     MAIL --> CHAT
     ISSUE --> CHAT
-    CRON["⏰ GitHub Actions<br/>매 15분 cron"] -. "트리거" .-> PIPE
+    CRON["⏰ GitHub Actions<br/>실행 중 ~3분 반복"] -. "트리거" .-> PIPE
 
     style FT fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a
     style FL fill:#fef3c7,stroke:#f59e0b,color:#78350f
@@ -65,13 +65,13 @@ flowchart LR
 | ✉️ **이메일** | [`scripts/mailer.js`](scripts/mailer.js) | Gmail SMTP로 매물·구매 링크·빠른 채팅 버튼 발송 |
 | 🐙 **이슈** | [`scripts/github.js`](scripts/github.js) | 신규 매물을 `당근마켓-알림` 라벨 이슈로 등록 |
 | 🌐 **등록 UI** | [`docs/`](docs) | 홈/관리자(지역 드롭다운)·빠른 채팅 도우미 (GitHub Pages) |
-| ⏰ **자동화** | [`daangn-alert.yml`](.github/workflows/daangn-alert.yml) | 매 15분 cron으로 전 과정 실행·상태 커밋 |
+| ⏰ **자동화** | [`daangn-alert.yml`](.github/workflows/daangn-alert.yml) | 실행되면 job 내부에서 ~3분마다 반복 점검·알림·상태 커밋 |
 
 ---
 
 ## 동작 흐름 (Operation Flow)
 
-매 15분, GitHub Actions가 아래 순서로 실행합니다. 각 감시 항목/알림 채널은 독립적으로
+GitHub Actions 가 실행되면 아래 순서를 ~3분마다 반복합니다. 각 감시 항목/알림 채널은 독립적으로
 실패를 흡수하므로 한 항목이 실패해도 나머지는 계속 진행됩니다.
 
 ```mermaid
@@ -84,7 +84,7 @@ sequenceDiagram
     participant ML as ✉️ Gmail SMTP
     participant GH as 🐙 GitHub 이슈
 
-    CR->>PP: 매 15분 실행
+    CR->>PP: ~3분마다 반복 실행
     loop 감시 항목마다
         PP->>DG: 키워드로 검색
         DG-->>PP: 매물 목록(제목·가격·지역·링크)
@@ -164,7 +164,7 @@ flowchart TD
 | `config/watches.json` | 감시 목록(키워드/지역/이메일) |
 | `scripts/` | 당근마켓 검색·파싱·이메일 발송 Node 스크립트 |
 | `state/seen.json` | 이미 알림 보낸 매물 ID (중복 방지, 워크플로가 자동 커밋) |
-| `.github/workflows/daangn-alert.yml` | 15분마다 실행되는 GitHub Actions |
+| `.github/workflows/daangn-alert.yml` | GitHub Actions (job 내부에서 ~3분마다 반복 점검) |
 
 > 전체 동작은 위의 [한눈에 보기](#-한눈에-보기) · [동작 흐름](#동작-흐름-operation-flow) ·
 > [데이터 플로](#데이터-플로-data-flow) 다이어그램을 참고하세요.
