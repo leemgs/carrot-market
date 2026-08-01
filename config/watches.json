@@ -24,7 +24,10 @@
       "id": "맥북-에어-13-m5-경기도",
       "keyword": "맥북 에어 13 M5",
       "location": "경기도",
-      "email": "leemgs@gmail.com",
+      "email": [
+        "leemgs@gmail.com",
+        "khs7516@gmail.com"
+      ],
       "enabled": true
     }
   ]
