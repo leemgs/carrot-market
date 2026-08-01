@@ -169,6 +169,7 @@ footer a { color: var(--carrot-dark); }
    ============================================================ */
 
 .wrap.wide { max-width: 960px; }
+.wrap.xwide { max-width: 1180px; }
 
 /* ---- 상단 네비게이션 ---- */
 .topnav {
