@@ -225,12 +225,13 @@ async function discoverApi(html, debug) {
       (js.match(/["'`](\/(?:v\d+\/)?[a-z0-9/_-]*(?:search|product)[a-z0-9/_-]*)["'`]/gi) || []).forEach(
         (u) => found.add(u.replace(/["'`]/g, ''))
       );
-      // "search/all" 요청 본문 구조 힌트: 주변 코드 + sort enum 후보 수집
-      let i = js.indexOf('search/all');
-      if (i >= 0 && ctx.length < 4) ctx.push(js.slice(Math.max(0, i - 400), i + 120).replace(/\s+/g, ' '));
-      (js.match(/[A-Z][A-Z_]{4,}_SORT|SORT_[A-Z_]{3,}|"[A-Z_]{4,}(?:SORT|ORDER)"/g) || []).forEach((s) =>
-        found.add('SORTENUM:' + s)
+      // keywordSource enum 값 힌트: 주변 코드 캡처
+      let k = js.indexOf('keywordSource');
+      if (k >= 0 && ctx.length < 6) ctx.push(js.slice(Math.max(0, k - 60), k + 240).replace(/\s+/g, ' '));
+      (js.match(/keywordSource["'`:\s]{1,4}["'`]([A-Z_]{3,})["'`]/g) || []).forEach((s) =>
+        found.add('KWSRC:' + s)
       );
+      (js.match(/[A-Z][A-Z_]{4,}_SORT|SORT_[A-Z_]{3,}/g) || []).forEach((s) => found.add('SORTENUM:' + s));
     } catch (_) {}
   }
   ctx.forEach((c) => debug.push(`ctx↳ ${c}`));
@@ -242,8 +243,12 @@ async function discoverApi(html, debug) {
     .forEach((u) => debug.push(`  host↳ ${u}`));
   [...found]
     .filter((u) => u.startsWith('SORTENUM:'))
-    .slice(0, 20)
+    .slice(0, 12)
     .forEach((u) => debug.push(`  sort↳ ${u.slice(9)}`));
+  [...found]
+    .filter((u) => u.startsWith('KWSRC:'))
+    .slice(0, 12)
+    .forEach((u) => debug.push(`  kwsrc↳ ${u.slice(6)}`));
 }
 
 /**
@@ -267,8 +272,8 @@ async function searchJoongna(watch) {
     items = parseItems(html);
   }
 
-  // API 로 제대로 못 가져왔고 DEBUG 면, JS 번들에서 실제 API 주소를 탐색
-  if (debug && (!items.length || !items[0].title)) {
+  // DEBUG: JS 번들에서 keywordSource/sort enum 등 요청 형식 탐색
+  if (debug) {
     try {
       if (!html) html = await fetchText(SEARCH_URL.replace('{kw}', encodeURIComponent(watch.keyword)));
       await discoverApi(html, debug);
@@ -280,16 +285,6 @@ async function searchJoongna(watch) {
   const matched = items.filter((it) => matchesWatch(it, watch));
 
   if (debug) {
-    // 자가검증: 결과가 확실히 있는 공통 키워드로 populated 파싱 확인
-    try {
-      const probe = [];
-      const t = await fetchApiItems('맥북에어', probe);
-      probe.forEach((l) => debug.push('[자가검증] ' + l));
-      debug.push(`[자가검증] '맥북에어' → ${(t || []).length}건`);
-      (t || []).slice(0, 3).forEach((it) => debug.push(`  ✓ ${it.title} | ${it.price} | ${it.region}`));
-    } catch (e) {
-      debug.push('[자가검증] 실패: ' + e.message);
-    }
     debug.forEach((l) => console.log(`    [DEBUG] ${l}`));
     console.log(`    [DEBUG] 중고나라(${via}) 파싱 ${items.length}건, 매칭 ${matched.length}건`);
     items.slice(0, 5).forEach((it) =>
