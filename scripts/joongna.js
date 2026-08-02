@@ -47,9 +47,9 @@ async function fetchText(url) {
 // 여러 후보 엔드포인트/바디를 시도하고, 응답 JSON 에서 매물 객체를 수집한다.
 function apiCandidates(keyword) {
   const url = 'https://search-api.joongna.com/v3/search/all';
-  // 확정된 요청 형식. keywordSource:"INPUT_KEYWORD" 가 있어야 실제 키워드 검색이 됨.
+  // 검색어 필드는 searchWord (keyword 는 무시됨). keywordSource:"INPUT_KEYWORD".
   const body = {
-    keyword,
+    searchWord: keyword,
     keywordSource: 'INPUT_KEYWORD',
     actionDetailType: 'NONE',
     page: 0,
@@ -99,23 +99,10 @@ async function fetchApiItems(keyword, debugLog) {
       try {
         json = JSON.parse(text);
       } catch (_) {}
-      if (json && json.data && debugLog) {
-        debugLog.push(`data.totalSize=${json.data.totalSize}, items=${(json.data.items || []).length}`);
-      }
       const out = json ? extractSearchItems(json) : [];
-      if (debugLog) {
-        // 200이면 응답 구조 파악용 스니펫, 오류면 오류 메시지
-        const snip =
-          res.status === 200
-            ? ` sample:${text.slice(0, 300).replace(/\s+/g, ' ')}`
-            : ` body:${text.slice(0, 140).replace(/\s+/g, ' ')}`;
-        debugLog.push(
-          `API ${JSON.stringify(ep.body)} → HTTP ${res.status}, ${text.length}자, 매물 ${out.length}건${snip}`
-        );
-      }
       if (out.length) return normalizeItems(out);
-    } catch (e) {
-      if (debugLog) debugLog.push(`API ${ep.url} 실패: ${e.message}`);
+    } catch (_) {
+      /* 다음 후보로 폴백 */
     } finally {
       clearTimeout(t);
     }
@@ -218,48 +205,6 @@ function parseItems(html) {
   return normalizeItems(out);
 }
 
-// DEBUG 전용: JS 번들에서 실제 검색 API 주소를 찾아낸다.
-async function discoverApi(html, debug) {
-  const chunks = [...new Set(html.match(/\/_next\/static\/[^"'\s)]+?\.js/g) || [])];
-  debug.push(`discover: chunk ${chunks.length}개`);
-  const found = new Set();
-  const ctx = [];
-  let n = 0;
-  for (const p of chunks) {
-    if (n >= 25) break;
-    try {
-      const js = await fetchText('https://web.joongna.com' + p);
-      n++;
-      (js.match(/https?:\/\/[a-z0-9.-]*joongna\.com[^"'`\s]*/gi) || []).forEach((u) => found.add(u));
-      (js.match(/["'`](\/(?:v\d+\/)?[a-z0-9/_-]*(?:search|product)[a-z0-9/_-]*)["'`]/gi) || []).forEach(
-        (u) => found.add(u.replace(/["'`]/g, ''))
-      );
-      // keywordSource enum 값 힌트: 주변 코드 캡처
-      let k = js.indexOf('keywordSource');
-      if (k >= 0 && ctx.length < 6) ctx.push(js.slice(Math.max(0, k - 60), k + 240).replace(/\s+/g, ' '));
-      (js.match(/keywordSource["'`:\s]{1,4}["'`]([A-Z_]{3,})["'`]/g) || []).forEach((s) =>
-        found.add('KWSRC:' + s)
-      );
-      (js.match(/[A-Z][A-Z_]{4,}_SORT|SORT_[A-Z_]{3,}/g) || []).forEach((s) => found.add('SORTENUM:' + s));
-    } catch (_) {}
-  }
-  ctx.forEach((c) => debug.push(`ctx↳ ${c}`));
-  debug.push(`discover: ${n}개 청크 조회, 후보 ${found.size}개`);
-  // 전체 API 호스트(URL)도 함께 노출
-  [...found]
-    .filter((u) => /^https?:\/\/[a-z0-9.-]*joongna\.com/i.test(u) && !/\.(png|jpg|jpeg|svg|css|woff2?)/i.test(u))
-    .slice(0, 15)
-    .forEach((u) => debug.push(`  host↳ ${u}`));
-  [...found]
-    .filter((u) => u.startsWith('SORTENUM:'))
-    .slice(0, 12)
-    .forEach((u) => debug.push(`  sort↳ ${u.slice(9)}`));
-  [...found]
-    .filter((u) => u.startsWith('KWSRC:'))
-    .slice(0, 12)
-    .forEach((u) => debug.push(`  kwsrc↳ ${u.slice(6)}`));
-}
-
 /**
  * 검색 + 파싱 + 필터(키워드/지역/희망가는 당근과 동일 규칙).
  * @param {{keyword:string,location:string,maxPrice?:number}} watch
@@ -281,42 +226,11 @@ async function searchJoongna(watch) {
     items = parseItems(html);
   }
 
-  // DEBUG 매트릭스: '맥북에어'로 여러 body 를 시도해 실제 키워드 검색되는 형식을 찾는다.
-  if (debug) {
-    const kw = '맥북에어';
-    const variants = [
-      { searchWord: kw, keywordSource: 'INPUT_KEYWORD', actionDetailType: 'NONE', page: 0, size: 50, sort: 'RECENT_SORT', filter: {} },
-      { searchWord: kw, keywordSource: 'INPUT_KEYWORD', page: 0, quantity: 50, sort: 'RECENT_SORT', filter: {} },
-      { keyword: kw, searchWord: kw, keywordSource: 'INPUT_KEYWORD', page: 0, size: 50, sort: 'RECENT_SORT', filter: {} },
-      { searchWord: kw, page: 0, size: 50, sort: 'RECENT_SORT' },
-    ];
-    for (const b of variants) {
-      try {
-        const res = await fetch('https://search-api.joongna.com/v3/search/all', {
-          method: 'POST',
-          headers: {
-            'User-Agent': USER_AGENT, Accept: 'application/json', 'Content-Type': 'application/json',
-            Origin: 'https://web.joongna.com', Referer: 'https://web.joongna.com/',
-          },
-          body: JSON.stringify(b),
-        });
-        const j = await res.json().catch(() => ({}));
-        const arr = (j.data && j.data.items) || [];
-        const hit = arr.filter((x) => String(x.title || x.productTitle || '').replace(/\s/g, '').includes('맥북')).length;
-        const empty = !!(j.data && j.data.emptyResult && j.data.emptyResult.notice);
-        debug.push(`[matrix] keys=${Object.keys(b).join('+')} → HTTP ${res.status}, items ${arr.length}, 맥북 ${hit}, total=${j.data && j.data.totalSize}, empty=${empty}`);
-      } catch (e) {
-        debug.push(`[matrix] ${Object.keys(b).join('+')} 실패: ${e.message}`);
-      }
-    }
-  }
-
   const matched = items.filter((it) => matchesWatch(it, watch));
 
   if (debug) {
-    debug.forEach((l) => console.log(`    [DEBUG] ${l}`));
     console.log(`    [DEBUG] 중고나라(${via}) 파싱 ${items.length}건, 매칭 ${matched.length}건`);
-    items.slice(0, 5).forEach((it) =>
+    matched.slice(0, 5).forEach((it) =>
       console.log(`    [DEBUG] · ${it.title || '(제목없음)'} | ${it.price || '-'} | 지역:${it.region || '(없음)'} | ${it.url}`)
     );
   }
