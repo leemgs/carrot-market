@@ -47,15 +47,24 @@ async function fetchText(url) {
 // 여러 후보 엔드포인트/바디를 시도하고, 응답 JSON 에서 매물 객체를 수집한다.
 function apiCandidates(keyword) {
   const url = 'https://search-api.joongna.com/v3/search/all';
-  // 확정된 요청 형식 (200 반환).
-  return [{ method: 'POST', url, body: { keyword, page: 0, size: 50, sort: 'RECENT_SORT', filter: {} } }];
+  // 확정된 요청 형식. keywordSource:"INPUT_KEYWORD" 가 있어야 실제 키워드 검색이 됨.
+  const body = {
+    keyword,
+    keywordSource: 'INPUT_KEYWORD',
+    actionDetailType: 'NONE',
+    page: 0,
+    size: 50,
+    sort: 'RECENT_SORT',
+    filter: {},
+  };
+  return [{ method: 'POST', url, body }];
 }
 
-// 응답에서 '진짜 검색 결과' 배열만 뽑는다.
-// 키워드 매치가 없으면 joongna 는 items 에 추천상품을 채워 보내므로 totalSize 로 구분한다.
+// 응답에서 검색 결과 배열(data.items)을 뽑는다.
+// 키워드가 없거나 매치가 없으면 추천상품이 섞여 오지만, 최종 matchesWatch(키워드 토큰)
+// 필터가 무관한 항목을 걸러내므로 여기서는 배열만 정규화한다.
 function extractSearchItems(json) {
   const d = (json && json.data) || {};
-  if (!(Number(d.totalSize) > 0)) return []; // 실제 검색결과 없음(추천만 채워진 경우)
   const cand =
     d.items ||
     d.productList ||
@@ -272,13 +281,15 @@ async function searchJoongna(watch) {
     items = parseItems(html);
   }
 
-  // DEBUG: JS 번들에서 keywordSource/sort enum 등 요청 형식 탐색
+  // DEBUG 자가검증: 결과가 확실한 공통 키워드로 키워드 검색이 실제 동작하는지 확인
   if (debug) {
     try {
-      if (!html) html = await fetchText(SEARCH_URL.replace('{kw}', encodeURIComponent(watch.keyword)));
-      await discoverApi(html, debug);
+      const t = await fetchApiItems('맥북에어', []);
+      const hit = (t || []).filter((it) => (it.title || '').replace(/\s/g, '').includes('맥북'));
+      debug.push(`[자가검증] '맥북에어' 파싱 ${(t || []).length}건, '맥북'포함 ${hit.length}건`);
+      hit.slice(0, 3).forEach((it) => debug.push(`  ✓ ${it.title} | ${it.price} | ${it.region}`));
     } catch (e) {
-      debug.push(`discover 실패: ${e.message}`);
+      debug.push('[자가검증] 실패: ' + e.message);
     }
   }
 
