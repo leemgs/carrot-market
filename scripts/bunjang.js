@@ -30,15 +30,22 @@ async function fetchJson(url) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 20000);
   try {
-    const res = await fetch(url, {
-      signal: ctrl.signal,
-      headers: {
-        'User-Agent': USER_AGENT,
-        Accept: 'application/json, text/plain, */*',
-        'Accept-Language': 'ko-KR,ko;q=0.9',
-        Referer: 'https://www.bunjang.com/',
-      },
-    });
+    let res;
+    try {
+      res = await fetch(url, {
+        signal: ctrl.signal,
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: 'application/json, text/plain, */*',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          Referer: 'https://www.bunjang.com/',
+        },
+      });
+    } catch (e) {
+      // 연결 단계 오류(fetch failed)의 실제 원인을 드러낸다.
+      const c = e && e.cause ? ` (${e.cause.code || e.cause.message || e.cause})` : '';
+      throw new Error(`${e.message}${c} [${url.slice(0, 60)}…]`);
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } finally {
