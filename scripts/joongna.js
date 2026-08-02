@@ -281,15 +281,33 @@ async function searchJoongna(watch) {
     items = parseItems(html);
   }
 
-  // DEBUG 자가검증: 결과가 확실한 공통 키워드로 키워드 검색이 실제 동작하는지 확인
+  // DEBUG 매트릭스: '맥북에어'로 여러 body 를 시도해 실제 키워드 검색되는 형식을 찾는다.
   if (debug) {
-    try {
-      const t = await fetchApiItems('맥북에어', []);
-      const hit = (t || []).filter((it) => (it.title || '').replace(/\s/g, '').includes('맥북'));
-      debug.push(`[자가검증] '맥북에어' 파싱 ${(t || []).length}건, '맥북'포함 ${hit.length}건`);
-      hit.slice(0, 3).forEach((it) => debug.push(`  ✓ ${it.title} | ${it.price} | ${it.region}`));
-    } catch (e) {
-      debug.push('[자가검증] 실패: ' + e.message);
+    const kw = '맥북에어';
+    const variants = [
+      { searchWord: kw, keywordSource: 'INPUT_KEYWORD', actionDetailType: 'NONE', page: 0, size: 50, sort: 'RECENT_SORT', filter: {} },
+      { searchWord: kw, keywordSource: 'INPUT_KEYWORD', page: 0, quantity: 50, sort: 'RECENT_SORT', filter: {} },
+      { keyword: kw, searchWord: kw, keywordSource: 'INPUT_KEYWORD', page: 0, size: 50, sort: 'RECENT_SORT', filter: {} },
+      { searchWord: kw, page: 0, size: 50, sort: 'RECENT_SORT' },
+    ];
+    for (const b of variants) {
+      try {
+        const res = await fetch('https://search-api.joongna.com/v3/search/all', {
+          method: 'POST',
+          headers: {
+            'User-Agent': USER_AGENT, Accept: 'application/json', 'Content-Type': 'application/json',
+            Origin: 'https://web.joongna.com', Referer: 'https://web.joongna.com/',
+          },
+          body: JSON.stringify(b),
+        });
+        const j = await res.json().catch(() => ({}));
+        const arr = (j.data && j.data.items) || [];
+        const hit = arr.filter((x) => String(x.title || x.productTitle || '').replace(/\s/g, '').includes('맥북')).length;
+        const empty = !!(j.data && j.data.emptyResult && j.data.emptyResult.notice);
+        debug.push(`[matrix] keys=${Object.keys(b).join('+')} → HTTP ${res.status}, items ${arr.length}, 맥북 ${hit}, total=${j.data && j.data.totalSize}, empty=${empty}`);
+      } catch (e) {
+        debug.push(`[matrix] ${Object.keys(b).join('+')} 실패: ${e.message}`);
+      }
     }
   }
 
