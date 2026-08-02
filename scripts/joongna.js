@@ -154,6 +154,9 @@ async function searchJoongna(watch) {
     console.log(
       `    [DEBUG] 중고나라 HTML ${html.length}자, 파싱 ${items.length}건, 매칭 ${matched.length}건, /product 링크 ${links}회`
     );
+    items.slice(0, 5).forEach((it) =>
+      console.log(`    [DEBUG] · ${it.title || '(제목없음)'} | ${it.price || '-'} | 지역:${it.region || '(없음)'} | ${it.url}`)
+    );
   }
   return matched;
 }
