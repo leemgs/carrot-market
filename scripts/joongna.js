@@ -90,8 +90,9 @@ async function fetchApiItems(keyword, debugLog) {
       const out = [];
       if (json) collectProducts(json, out, new Set());
       if (debugLog) {
+        const snip = res.status >= 400 ? ` body:${text.slice(0, 200).replace(/\s+/g, ' ')}` : '';
         debugLog.push(
-          `API ${ep.method} ${ep.url.replace('https://search-api.joongna.com', '')} → HTTP ${res.status}, ${text.length}자, 매물 ${out.length}건`
+          `API ${ep.method} ${ep.url.replace('https://search-api.joongna.com', '')} → HTTP ${res.status}, ${text.length}자, 매물 ${out.length}건${snip}`
         );
       }
       if (out.length) return normalizeItems(out);
@@ -199,6 +200,30 @@ function parseItems(html) {
   return normalizeItems(out);
 }
 
+// DEBUG 전용: JS 번들에서 실제 검색 API 주소를 찾아낸다.
+async function discoverApi(html, debug) {
+  const chunks = [...new Set(html.match(/\/_next\/static\/[^"'\s)]+?\.js/g) || [])];
+  debug.push(`discover: chunk ${chunks.length}개`);
+  const found = new Set();
+  let n = 0;
+  for (const p of chunks) {
+    if (n >= 18) break;
+    try {
+      const js = await fetchText('https://web.joongna.com' + p);
+      n++;
+      (js.match(/https?:\/\/[a-z0-9.-]*joongna\.com[^"'`\s]*/gi) || []).forEach((u) => found.add(u));
+      (js.match(/["'`](\/(?:v\d+\/)?[a-z0-9/_-]*(?:search|product)[a-z0-9/_-]*)["'`]/gi) || []).forEach(
+        (u) => found.add(u.replace(/["'`]/g, ''))
+      );
+    } catch (_) {}
+  }
+  debug.push(`discover: ${n}개 청크 조회, 후보 ${found.size}개`);
+  [...found]
+    .filter((u) => /search|product|\/v\d/.test(u) && !/\.(png|jpg|svg|css|woff)/i.test(u))
+    .slice(0, 40)
+    .forEach((u) => debug.push(`  ↳ ${u}`));
+}
+
 /**
  * 검색 + 파싱 + 필터(키워드/지역/희망가는 당근과 동일 규칙).
  * @param {{keyword:string,location:string,maxPrice?:number}} watch
@@ -212,11 +237,22 @@ async function searchJoongna(watch) {
   let via = 'API';
 
   // 2) API 실패 시 검색 페이지 HTML 폴백 (링크만이라도)
+  let html = null;
   if (!items || !items.length) {
     via = 'HTML';
     const url = SEARCH_URL.replace('{kw}', encodeURIComponent(watch.keyword));
-    const html = await fetchText(url);
+    html = await fetchText(url);
     items = parseItems(html);
+  }
+
+  // API 로 제대로 못 가져왔고 DEBUG 면, JS 번들에서 실제 API 주소를 탐색
+  if (debug && (!items.length || !items[0].title)) {
+    try {
+      if (!html) html = await fetchText(SEARCH_URL.replace('{kw}', encodeURIComponent(watch.keyword)));
+      await discoverApi(html, debug);
+    } catch (e) {
+      debug.push(`discover 실패: ${e.message}`);
+    }
   }
 
   const matched = items.filter((it) => matchesWatch(it, watch));
