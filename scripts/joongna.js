@@ -56,14 +56,8 @@ function apiCandidates(keyword) {
     size: 50,
     sort: 'RECENT_SORT',
   };
-  const qs = `keyword=${encodeURIComponent(keyword)}&page=0&size=50&sort=RECENT_SORT`;
-  // JS 번들에서 발견한 실제 경로 후보들
-  return [
-    { method: 'POST', url: `${H}/v3/search/all`, body },
-    { method: 'POST', url: `${H}/product/list`, body },
-    { method: 'GET', url: `${H}/v3/search/all?${qs}` },
-    { method: 'GET', url: `${H}/product/list?${qs}` },
-  ];
+  // 확인된 엔드포인트(POST /v3/search/all). body 형식만 맞추면 됨.
+  return [{ method: 'POST', url: `${H}/v3/search/all`, body }];
 }
 
 async function fetchApiItems(keyword, debugLog) {
@@ -207,9 +201,10 @@ async function discoverApi(html, debug) {
   const chunks = [...new Set(html.match(/\/_next\/static\/[^"'\s)]+?\.js/g) || [])];
   debug.push(`discover: chunk ${chunks.length}개`);
   const found = new Set();
+  const ctx = [];
   let n = 0;
   for (const p of chunks) {
-    if (n >= 18) break;
+    if (n >= 25) break;
     try {
       const js = await fetchText('https://web.joongna.com' + p);
       n++;
@@ -217,8 +212,15 @@ async function discoverApi(html, debug) {
       (js.match(/["'`](\/(?:v\d+\/)?[a-z0-9/_-]*(?:search|product)[a-z0-9/_-]*)["'`]/gi) || []).forEach(
         (u) => found.add(u.replace(/["'`]/g, ''))
       );
+      // "search/all" 요청 본문 구조 힌트: 주변 코드 + sort enum 후보 수집
+      let i = js.indexOf('search/all');
+      if (i >= 0 && ctx.length < 4) ctx.push(js.slice(Math.max(0, i - 400), i + 120).replace(/\s+/g, ' '));
+      (js.match(/[A-Z][A-Z_]{4,}_SORT|SORT_[A-Z_]{3,}|"[A-Z_]{4,}(?:SORT|ORDER)"/g) || []).forEach((s) =>
+        found.add('SORTENUM:' + s)
+      );
     } catch (_) {}
   }
+  ctx.forEach((c) => debug.push(`ctx↳ ${c}`));
   debug.push(`discover: ${n}개 청크 조회, 후보 ${found.size}개`);
   // 전체 API 호스트(URL)도 함께 노출
   [...found]
@@ -226,9 +228,9 @@ async function discoverApi(html, debug) {
     .slice(0, 15)
     .forEach((u) => debug.push(`  host↳ ${u}`));
   [...found]
-    .filter((u) => u.startsWith('/') && /search|product|\/v\d/.test(u) && !/\.(png|jpg|svg|css|woff)/i.test(u))
-    .slice(0, 40)
-    .forEach((u) => debug.push(`  path↳ ${u}`));
+    .filter((u) => u.startsWith('SORTENUM:'))
+    .slice(0, 20)
+    .forEach((u) => debug.push(`  sort↳ ${u.slice(9)}`));
 }
 
 /**
