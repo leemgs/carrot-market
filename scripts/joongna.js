@@ -43,6 +43,67 @@ async function fetchText(url) {
   }
 }
 
+// 검색 결과는 페이지 로드 후 API 로 불러오므로 API 를 직접 호출한다.
+// 여러 후보 엔드포인트/바디를 시도하고, 응답 JSON 에서 매물 객체를 수집한다.
+function apiCandidates(keyword) {
+  const body = {
+    filter: {},
+    keyword,
+    keywordSource: 'DIRECT_KEYWORD',
+    page: 0,
+    size: 50,
+    sort: 'RECENT_SORT',
+  };
+  return [
+    { method: 'POST', url: 'https://search-api.joongna.com/v4/search/product', body },
+    { method: 'POST', url: 'https://search-api.joongna.com/v3/search/product', body },
+    {
+      method: 'GET',
+      url: `https://search-api.joongna.com/search/product?keyword=${encodeURIComponent(keyword)}&page=0&size=50&sort=RECENT_SORT`,
+    },
+  ];
+}
+
+async function fetchApiItems(keyword, debugLog) {
+  for (const ep of apiCandidates(keyword)) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const res = await fetch(ep.url, {
+        method: ep.method,
+        signal: ctrl.signal,
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: 'application/json, text/plain, */*',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          'Content-Type': 'application/json',
+          Origin: 'https://web.joongna.com',
+          Referer: 'https://web.joongna.com/',
+        },
+        body: ep.method === 'POST' ? JSON.stringify(ep.body) : undefined,
+      });
+      const text = await res.text();
+      let json = null;
+      try {
+        json = JSON.parse(text);
+      } catch (_) {}
+      const out = [];
+      if (json) collectProducts(json, out, new Set());
+      if (debugLog) {
+        debugLog.push(
+          `API ${ep.method} ${ep.url.replace('https://search-api.joongna.com', '')} → HTTP ${res.status}, ${text.length}자, 매물 ${out.length}건`
+        );
+      }
+      if (out.length) return normalizeItems(out);
+    } catch (e) {
+      if (debugLog) debugLog.push(`API ${ep.url} 실패: ${e.message}`);
+    } finally {
+      clearTimeout(t);
+    }
+  }
+  return null;
+}
+
 // 문자열에서 <script ...>{...}</script> 의 JSON 블록들을 추출 (application/json, __NEXT_DATA__ 등)
 function extractJsonBlocks(html) {
   const blocks = [];
@@ -144,31 +205,28 @@ function parseItems(html) {
  * @returns {Promise<Array>}
  */
 async function searchJoongna(watch) {
-  const url = SEARCH_URL.replace('{kw}', encodeURIComponent(watch.keyword));
-  const html = await fetchText(url);
-  const items = parseItems(html);
+  const debug = process.env.DEBUG === 'true' ? [] : null;
+
+  // 1) 검색 API 우선 (제목/가격/지역 포함)
+  let items = await fetchApiItems(watch.keyword, debug);
+  let via = 'API';
+
+  // 2) API 실패 시 검색 페이지 HTML 폴백 (링크만이라도)
+  if (!items || !items.length) {
+    via = 'HTML';
+    const url = SEARCH_URL.replace('{kw}', encodeURIComponent(watch.keyword));
+    const html = await fetchText(url);
+    items = parseItems(html);
+  }
+
   const matched = items.filter((it) => matchesWatch(it, watch));
 
-  if (process.env.DEBUG === 'true') {
-    const links = (html.match(/\/product\/\d+/g) || []).length;
-    console.log(
-      `    [DEBUG] 중고나라 HTML ${html.length}자, 파싱 ${items.length}건, 매칭 ${matched.length}건, /product 링크 ${links}회`
-    );
+  if (debug) {
+    debug.forEach((l) => console.log(`    [DEBUG] ${l}`));
+    console.log(`    [DEBUG] 중고나라(${via}) 파싱 ${items.length}건, 매칭 ${matched.length}건`);
     items.slice(0, 5).forEach((it) =>
       console.log(`    [DEBUG] · ${it.title || '(제목없음)'} | ${it.price || '-'} | 지역:${it.region || '(없음)'} | ${it.url}`)
     );
-    // 구조 진단: 어떤 형식으로 데이터가 임베드돼 있는지 파악
-    const sig = (re) => (html.match(re) || []).length;
-    console.log(
-      `    [DEBUG] 신호 next_f=${sig(/__next_f\.push/g)} seq=${sig(/"seq"/g)} productSeq=${sig(/"productSeq"/g)} title=${sig(/"title"/g)} productTitle=${sig(/"productTitle"/g)} price=${sig(/"price"/g)}`
-    );
-    console.log(
-      `    [DEBUG] api호스트 search-api=${/search-api\.joongna\.com/.test(html)} api=${/[^-]api\.joongna\.com/.test(html)}`
-    );
-    const idx = html.search(/"(?:productSeq|seq|productTitle|title)"\s*:/);
-    if (idx >= 0) {
-      console.log(`    [DEBUG] 스니펫@${idx}: ${html.slice(idx, idx + 500).replace(/\s+/g, ' ')}`);
-    }
   }
   return matched;
 }
