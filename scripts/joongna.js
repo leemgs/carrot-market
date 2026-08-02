@@ -47,16 +47,23 @@ async function fetchText(url) {
 // 여러 후보 엔드포인트/바디를 시도하고, 응답 JSON 에서 매물 객체를 수집한다.
 function apiCandidates(keyword) {
   const url = 'https://search-api.joongna.com/v3/search/all';
-  // POST /v3/search/all 확인됨. 올바른 body 형식을 찾기 위한 변형들.
-  const bodies = [
-    { keyword, page: 0, size: 50, sort: 'RECENT_SORT', filter: {} },
-    { keyword, page: 0, size: 50, sort: 'SORT_RECENT', filter: {} },
-    { keyword, page: 0, size: 50 },
-    { keyword },
-    { searchWord: keyword, page: 0, size: 50 },
-    { keyword, page: 0, size: 50, sort: 'RECENT_SORT', filter: { COUNTRY: 'ALL' } },
-  ];
-  return bodies.map((body) => ({ method: 'POST', url, body }));
+  // 확정된 요청 형식 (200 반환).
+  return [{ method: 'POST', url, body: { keyword, page: 0, size: 50, sort: 'RECENT_SORT', filter: {} } }];
+}
+
+// 응답에서 '진짜 검색 결과' 배열만 뽑는다 (추천/빈결과 상품 제외).
+function extractSearchItems(json) {
+  const d = (json && json.data) || {};
+  const cand =
+    d.items ||
+    d.productList ||
+    d.products ||
+    d.list ||
+    (d.searchResult && d.searchResult.items) ||
+    (d.productResult && d.productResult.items);
+  const out = [];
+  if (Array.isArray(cand)) collectProducts(cand, out, new Set());
+  return out;
 }
 
 async function fetchApiItems(keyword, debugLog) {
@@ -82,8 +89,13 @@ async function fetchApiItems(keyword, debugLog) {
       try {
         json = JSON.parse(text);
       } catch (_) {}
-      const out = [];
-      if (json) collectProducts(json, out, new Set());
+      if (json && json.data && debugLog) {
+        const dk = Object.keys(json.data).map((k) =>
+          Array.isArray(json.data[k]) ? `${k}[${json.data[k].length}]` : k
+        );
+        debugLog.push(`data keys: ${dk.join(', ')}`);
+      }
+      const out = json ? extractSearchItems(json) : [];
       if (debugLog) {
         // 200이면 응답 구조 파악용 스니펫, 오류면 오류 메시지
         const snip =
