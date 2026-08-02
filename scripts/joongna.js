@@ -51,16 +51,17 @@ function apiCandidates(keyword) {
   return [{ method: 'POST', url, body: { keyword, page: 0, size: 50, sort: 'RECENT_SORT', filter: {} } }];
 }
 
-// 응답에서 '진짜 검색 결과' 배열만 뽑는다 (추천/빈결과 상품 제외).
+// 응답에서 '진짜 검색 결과' 배열만 뽑는다.
+// 키워드 매치가 없으면 joongna 는 items 에 추천상품을 채워 보내므로 totalSize 로 구분한다.
 function extractSearchItems(json) {
   const d = (json && json.data) || {};
+  if (!(Number(d.totalSize) > 0)) return []; // 실제 검색결과 없음(추천만 채워진 경우)
   const cand =
     d.items ||
     d.productList ||
     d.products ||
     d.list ||
-    (d.searchResult && d.searchResult.items) ||
-    (d.productResult && d.productResult.items);
+    (d.searchResult && d.searchResult.items);
   const out = [];
   if (Array.isArray(cand)) collectProducts(cand, out, new Set());
   return out;
@@ -90,10 +91,7 @@ async function fetchApiItems(keyword, debugLog) {
         json = JSON.parse(text);
       } catch (_) {}
       if (json && json.data && debugLog) {
-        const dk = Object.keys(json.data).map((k) =>
-          Array.isArray(json.data[k]) ? `${k}[${json.data[k].length}]` : k
-        );
-        debugLog.push(`data keys: ${dk.join(', ')}`);
+        debugLog.push(`data.totalSize=${json.data.totalSize}, items=${(json.data.items || []).length}`);
       }
       const out = json ? extractSearchItems(json) : [];
       if (debugLog) {
@@ -282,6 +280,16 @@ async function searchJoongna(watch) {
   const matched = items.filter((it) => matchesWatch(it, watch));
 
   if (debug) {
+    // 자가검증: 결과가 확실히 있는 공통 키워드로 populated 파싱 확인
+    try {
+      const probe = [];
+      const t = await fetchApiItems('맥북에어', probe);
+      probe.forEach((l) => debug.push('[자가검증] ' + l));
+      debug.push(`[자가검증] '맥북에어' → ${(t || []).length}건`);
+      (t || []).slice(0, 3).forEach((it) => debug.push(`  ✓ ${it.title} | ${it.price} | ${it.region}`));
+    } catch (e) {
+      debug.push('[자가검증] 실패: ' + e.message);
+    }
     debug.forEach((l) => console.log(`    [DEBUG] ${l}`));
     console.log(`    [DEBUG] 중고나라(${via}) 파싱 ${items.length}건, 매칭 ${matched.length}건`);
     items.slice(0, 5).forEach((it) =>
