@@ -46,21 +46,23 @@ async function fetchText(url) {
 // 검색 결과는 페이지 로드 후 API 로 불러오므로 API 를 직접 호출한다.
 // 여러 후보 엔드포인트/바디를 시도하고, 응답 JSON 에서 매물 객체를 수집한다.
 function apiCandidates(keyword) {
+  const H = 'https://search-api.joongna.com';
   const body = {
     filter: {},
     keyword,
     keywordSource: 'DIRECT_KEYWORD',
+    searchType: 'PRODUCT',
     page: 0,
     size: 50,
     sort: 'RECENT_SORT',
   };
+  const qs = `keyword=${encodeURIComponent(keyword)}&page=0&size=50&sort=RECENT_SORT`;
+  // JS 번들에서 발견한 실제 경로 후보들
   return [
-    { method: 'POST', url: 'https://search-api.joongna.com/v4/search/product', body },
-    { method: 'POST', url: 'https://search-api.joongna.com/v3/search/product', body },
-    {
-      method: 'GET',
-      url: `https://search-api.joongna.com/search/product?keyword=${encodeURIComponent(keyword)}&page=0&size=50&sort=RECENT_SORT`,
-    },
+    { method: 'POST', url: `${H}/v3/search/all`, body },
+    { method: 'POST', url: `${H}/product/list`, body },
+    { method: 'GET', url: `${H}/v3/search/all?${qs}` },
+    { method: 'GET', url: `${H}/product/list?${qs}` },
   ];
 }
 
@@ -218,10 +220,15 @@ async function discoverApi(html, debug) {
     } catch (_) {}
   }
   debug.push(`discover: ${n}개 청크 조회, 후보 ${found.size}개`);
+  // 전체 API 호스트(URL)도 함께 노출
   [...found]
-    .filter((u) => /search|product|\/v\d/.test(u) && !/\.(png|jpg|svg|css|woff)/i.test(u))
+    .filter((u) => /^https?:\/\/[a-z0-9.-]*joongna\.com/i.test(u) && !/\.(png|jpg|jpeg|svg|css|woff2?)/i.test(u))
+    .slice(0, 15)
+    .forEach((u) => debug.push(`  host↳ ${u}`));
+  [...found]
+    .filter((u) => u.startsWith('/') && /search|product|\/v\d/.test(u) && !/\.(png|jpg|svg|css|woff)/i.test(u))
     .slice(0, 40)
-    .forEach((u) => debug.push(`  ↳ ${u}`));
+    .forEach((u) => debug.push(`  path↳ ${u}`));
 }
 
 /**
