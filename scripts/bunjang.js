@@ -14,10 +14,22 @@
 const { formatPrice, parsePriceValue } = require('./price');
 const { matchesWatch } = require('./daangn');
 
-// {kw} 는 URL 인코딩된 키워드로 치환. 환경변수로 재정의 가능.
-const SEARCH_API =
-  process.env.BUNJANG_SEARCH_URL ||
-  'https://api.bunjang.com/api/1/find_v2.json?q={kw}&order=date&page=0&n=100&stat_device=w&req_ref=search&version=5';
+// {kw} 는 URL 인코딩된 키워드로 치환. 환경변수로 재정의 가능(단일 URL).
+const SEARCH_API = process.env.BUNJANG_SEARCH_URL || '';
+
+// find_v2.json 을 서빙하는 후보 호스트들 (api 서브도메인이 바뀌는 경우 대비)
+function candidateUrls(keyword) {
+  if (SEARCH_API) return [SEARCH_API.replace('{kw}', encodeURIComponent(keyword))];
+  const qs =
+    `q=${encodeURIComponent(keyword)}&order=date&page=0&n=100&stat_device=w&req_ref=search&version=4`;
+  return [
+    `https://api.bunjang.com/api/1/find_v2.json?${qs}`,
+    `https://openapi.bunjang.com/api/1/find_v2.json?${qs}`,
+    `https://www.bunjang.com/api/1/find_v2.json?${qs}`,
+    `https://m.bunjang.com/api/1/find_v2.json?${qs}`,
+    `https://api.bunjang.co.kr/api/1/find_v2.json?${qs}`,
+  ];
+}
 
 // 매물 상세 페이지 도메인
 const PRODUCT_BASE = 'https://www.bunjang.com/products';
@@ -93,20 +105,63 @@ function parseItems(json) {
  * @returns {Promise<Array>}
  */
 async function searchBunjang(watch) {
-  const url = SEARCH_API.replace('{kw}', encodeURIComponent(watch.keyword));
-  const json = await fetchJson(url);
+  const dbg = process.env.DEBUG === 'true';
+  let json = null;
+  let lastErr = '';
+  for (const url of candidateUrls(watch.keyword)) {
+    try {
+      const j = await fetchJson(url);
+      if (j && Array.isArray(j.list)) {
+        json = j;
+        if (dbg) console.log(`    [DEBUG] 번개장터 호스트 OK → ${url.split('?')[0]}`);
+        break;
+      }
+    } catch (e) {
+      lastErr = e.message;
+    }
+  }
+
+  if (!json) {
+    if (dbg) {
+      console.log(`    [DEBUG] 번개장터 모든 후보 실패 (${lastErr})`);
+      await discoverBunjangApi();
+    }
+    throw new Error(`번개장터 검색 실패 (${lastErr})`);
+  }
+
   const items = parseItems(json);
   const matched = items.filter((it) => matchesWatch(it, watch));
 
-  if (process.env.DEBUG === 'true') {
+  if (dbg) {
     console.log(
-      `    [DEBUG] 번개장터 API list ${(json && json.list ? json.list.length : 0)}건, 파싱 ${items.length}건, 매칭 ${matched.length}건`
+      `    [DEBUG] 번개장터 list ${json.list.length}건, 파싱 ${items.length}건, 매칭 ${matched.length}건`
     );
     matched.slice(0, 5).forEach((it) =>
       console.log(`    [DEBUG] · ${it.title || '(제목없음)'} | ${it.price || '-'} | 지역:${it.region || '(없음)'} | ${it.url}`)
     );
   }
   return matched;
+}
+
+// DEBUG 전용: 번개장터 웹에서 실제 검색 API 호스트/엔드포인트를 찾는다.
+async function discoverBunjangApi() {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch('https://m.bunjang.com/', {
+      signal: ctrl.signal,
+      headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,*/*' },
+    });
+    clearTimeout(t);
+    const html = await res.text();
+    const hosts = [...new Set(html.match(/https?:\/\/[a-z0-9.-]*bunjang[a-z0-9.-]*/gi) || [])];
+    const paths = [...new Set(html.match(/\/api\/[a-z0-9/_.-]*(?:find|search|product)[a-z0-9/_.-]*/gi) || [])];
+    console.log(`    [DEBUG] discover: bunjang HTML ${html.length}자`);
+    hosts.slice(0, 15).forEach((h) => console.log(`    [DEBUG]   host↳ ${h}`));
+    paths.slice(0, 15).forEach((p) => console.log(`    [DEBUG]   path↳ ${p}`));
+  } catch (e) {
+    console.log(`    [DEBUG] discover 실패: ${e.message}`);
+  }
 }
 
 module.exports = { searchBunjang, parseItems };
