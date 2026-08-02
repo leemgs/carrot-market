@@ -1,7 +1,14 @@
 'use strict';
 
-// 저장소 정보 (다른 저장소로 포크했다면 이 값만 수정하세요)
-const REPO = 'leemgs/carrot-market';
+// 저장소를 Pages URL(owner.github.io/repo)에서 유추 → 레포 이름변경에도 안전.
+const REPO = (function () {
+  try {
+    const host = location.hostname;
+    const seg = location.pathname.split('/').filter(Boolean)[0];
+    if (host.endsWith('github.io') && seg) return host.split('.')[0] + '/' + seg;
+  } catch (_) {}
+  return 'leemgs/used-notifier';
+})();
 const BRANCH = 'main';
 const CONFIG_PATH = 'config/watches.json';
 
@@ -50,6 +57,11 @@ form.addEventListener('submit', (e) => {
   const maxDigits = document.getElementById('maxprice').value.replace(/[^\d]/g, '');
   const maxPrice = maxDigits ? parseInt(maxDigits, 10) : 0;
 
+  // 검색할 사이트 (당근/중고나라)
+  const sites = Array.from(document.querySelectorAll('input[name="site"]:checked')).map(
+    (el) => el.value
+  );
+
   const watch = {
     id: makeId(keyword, location),
     keyword,
@@ -58,6 +70,7 @@ form.addEventListener('submit', (e) => {
     enabled: true,
   };
   if (maxPrice > 0) watch.maxPrice = maxPrice;
+  if (sites.length) watch.sites = sites; // 선택한 사이트 명시 (미선택 시 생략 → 기본 전체)
 
   snippetEl.textContent = JSON.stringify(watch, null, 2);
   result.classList.remove('hidden');

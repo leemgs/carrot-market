@@ -9,8 +9,25 @@ const CONFIG_PATH = 'config/watches.json';
 const LS_TOKEN = 'cma_token';
 const LS_REPO = 'cma_repo';
 const LS_BRANCH = 'cma_branch';
-const DEFAULT_REPO = 'leemgs/carrot-market';
+// 저장소를 Pages URL(owner.github.io/repo)에서 유추 → 레포 이름변경에도 안전.
+const DEFAULT_REPO = (function () {
+  try {
+    const host = location.hostname;
+    const seg = location.pathname.split('/').filter(Boolean)[0];
+    if (host.endsWith('github.io') && seg) return host.split('.')[0] + '/' + seg;
+  } catch (_) {}
+  return 'leemgs/used-notifier';
+})();
 const DEFAULT_BRANCH = 'main';
+
+// 사이트(소스) 메타
+const SITE_META = { daangn: '🥕 당근마켓', joongna: '🟢 중고나라' };
+const ALL_SITES = ['daangn', 'joongna'];
+// watch.sites 정규화 (미지정 → 전체)
+function watchSitesOf(w) {
+  const s = Array.isArray(w && w.sites) ? w.sites.filter((k) => SITE_META[k]) : [];
+  return s.length ? s : ALL_SITES.slice();
+}
 
 // ------- 상태 -------
 let data = null; // watches.json 전체 객체
@@ -185,6 +202,7 @@ function render() {
     tr.innerHTML = `
       <td><input type="checkbox" data-toggle="${i}" ${w.enabled === false ? '' : 'checked'}></td>
       <td><b>${esc(w.keyword)}</b></td>
+      <td>${watchSitesOf(w).map((k) => `<span class="chip site-chip site-${k}">${esc(SITE_META[k])}</span>`).join('')}</td>
       <td>${esc(w.location)}</td>
       <td class="muted-cell">${w.maxPrice ? esc(formatMaxPrice(w.maxPrice)) : '-'}</td>
       <td class="email-cell">${emailCell}</td>
@@ -260,6 +278,10 @@ function openEdit(index) {
   $('edit-index').value = index;
   const w = isNew ? {} : data.watches[index];
   $('f-keyword').value = w.keyword || '';
+  const sel = watchSitesOf(w);
+  document.querySelectorAll('input[name="f-site"]').forEach((el) => {
+    el.checked = sel.includes(el.value);
+  });
   regionPicker.setValue(w.location || '');
   $('f-maxprice').value = w.maxPrice ? Number(w.maxPrice).toLocaleString('ko-KR') : '';
   $('f-email').value = formatEmails(w.email);
@@ -286,6 +308,11 @@ $('edit-form').addEventListener('submit', (e) => {
     id: slugId(keyword, location),
     keyword,
     location,
+    sites: (function () {
+      const chosen = Array.from(document.querySelectorAll('input[name="f-site"]:checked')).map((el) => el.value);
+      // 전체(또는 미선택)면 생략 → 기본 전체. 일부만 선택 시 명시.
+      return chosen.length && chosen.length < ALL_SITES.length ? chosen : undefined;
+    })(),
     maxPrice: parseMaxPrice($('f-maxprice').value),
     email: emailsToStore($('f-email').value),
     chatMessage: $('f-msg').value.trim() || undefined,

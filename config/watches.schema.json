@@ -42,6 +42,11 @@
             "type": "string",
             "description": "구매 가능 지역 (매물 지역/제목에 포함되면 매칭). 예: 수원시"
           },
+          "sites": {
+            "type": "array",
+            "description": "검색할 사이트 키 목록. 미지정이면 전체(당근+중고나라).",
+            "items": { "type": "string", "enum": ["daangn", "joongna"] }
+          },
           "maxPrice": {
             "type": "number",
             "description": "희망 금액(원). 이 금액 '이하'인 매물만 알림. 0/미지정이면 금액 제한 없음. 가격 미표기 매물은 포함.",

@@ -7,11 +7,23 @@
 
   let all = [];
   let stateFilter = 'open'; // open | closed | all
+  let siteFilter = new URLSearchParams(location.search).get('site') || 'all'; // daangn | joongna | all
   let keyword = '';
 
   const listEl = $('issue-list');
   const searchEl = $('search');
   const countEl = $('result-count');
+  const titleEl = $('page-title');
+
+  // 사이트에 맞춰 제목 갱신
+  function siteName(key) {
+    const s = (GHData.SITES || []).find((x) => x.key === key);
+    return s ? s.name : '전체';
+  }
+  if (titleEl) {
+    titleEl.textContent =
+      siteFilter === 'all' ? '🔔 매물 알림' : `${siteFilter === 'daangn' ? '🥕' : '🟢'} ${siteName(siteFilter)} 알림`;
+  }
 
   async function load() {
     listEl.innerHTML = '<p class="state-msg"><span class="spinner"></span> 불러오는 중…</p>';
@@ -25,7 +37,11 @@
   }
 
   function render() {
-    let rows = all.filter((it) => stateFilter === 'all' || it.state === stateFilter);
+    let rows = all.filter(
+      (it) =>
+        (stateFilter === 'all' || it.state === stateFilter) &&
+        (siteFilter === 'all' || it.site === siteFilter)
+    );
     if (keyword) {
       const q = keyword.toLowerCase();
       rows = rows.filter(
@@ -48,11 +64,22 @@
   }
 
   // 상태 세그먼트 버튼
-  document.querySelectorAll('.seg button').forEach((btn) => {
+  document.querySelectorAll('.seg-state button').forEach((btn) => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.seg button').forEach((b) => b.classList.remove('on'));
+      document.querySelectorAll('.seg-state button').forEach((b) => b.classList.remove('on'));
       btn.classList.add('on');
       stateFilter = btn.dataset.state;
+      render();
+    });
+  });
+
+  // 사이트 세그먼트 버튼 (초기 선택은 ?site 값에 맞춤)
+  document.querySelectorAll('.seg-site button').forEach((btn) => {
+    btn.classList.toggle('on', btn.dataset.site === siteFilter);
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.seg-site button').forEach((b) => b.classList.remove('on'));
+      btn.classList.add('on');
+      siteFilter = btn.dataset.site;
       render();
     });
   });

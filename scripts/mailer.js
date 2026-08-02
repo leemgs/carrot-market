@@ -34,27 +34,29 @@ function createTransport() {
  * @param {object} params.watch         {keyword, location}
  * @param {Array}  params.items         새로 발견된 매물 배열
  * @param {string} [params.chatMessage] 채팅 도우미에 미리 채울 인사말
+ * @param {string} [params.siteName]    소스(사이트) 이름 (예: 당근마켓, 중고나라)
  */
-async function sendNewItemsEmail({ to, watch, items, chatMessage }) {
+async function sendNewItemsEmail({ to, watch, items, chatMessage, siteName }) {
   const transporter = createTransport();
-  const fromName = process.env.MAIL_FROM_NAME || '당근마켓 알림';
+  const site = siteName || '당근마켓';
+  const fromName = process.env.MAIL_FROM_NAME || '중고 알리미';
   const from = `"${fromName}" <${process.env.GMAIL_USER}>`;
   const message = chatMessage || '안녕하세요. 제가 구매 가능할까요?';
 
-  const subject = `[당근마켓 알림] '${watch.keyword}' (${watch.location}) 신규 매물 ${items.length}건`;
+  const subject = `[${site} 알림] '${watch.keyword}' (${watch.location || '전체'}) 신규 매물 ${items.length}건`;
 
   await transporter.sendMail({
     from,
     to,
     subject,
-    text: buildText(watch, items, message),
-    html: buildHtml(watch, items, message),
+    text: buildText(watch, items, message, site),
+    html: buildHtml(watch, items, message, site),
   });
 }
 
-function buildText(watch, items, message) {
+function buildText(watch, items, message, site) {
   const lines = [
-    `당근마켓에 '${watch.keyword}' 키워드 / '${watch.location}' 지역의 신규 매물이 올라왔습니다.`,
+    `${site || '당근마켓'}에 '${watch.keyword}' 키워드 / '${watch.location || '전체'}' 지역의 신규 매물이 올라왔습니다.`,
     '',
   ];
   items.forEach((it, i) => {
@@ -79,7 +81,8 @@ function esc(s) {
   }[c]));
 }
 
-function buildHtml(watch, items, message) {
+function buildHtml(watch, items, message, site) {
+  const siteName = site || '당근마켓';
   const cards = items
     .map(
       (it) => `
@@ -114,9 +117,9 @@ function buildHtml(watch, items, message) {
 <body style="margin:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:20px;">
     <div style="background:#fff;border-radius:12px;padding:24px;">
-      <h1 style="margin:0 0 4px;font-size:20px;color:#ff6f0f;">🥕 당근마켓 신규 매물 알림</h1>
+      <h1 style="margin:0 0 4px;font-size:20px;color:#ff6f0f;">🛒 ${esc(siteName)} 신규 매물 알림</h1>
       <p style="margin:0 0 16px;color:#555;font-size:14px;">
-        키워드 <b>'${esc(watch.keyword)}'</b> · 지역 <b>'${esc(watch.location)}'</b> 조건의 신규 매물 <b>${items.length}</b>건
+        <b>${esc(siteName)}</b> · 키워드 <b>'${esc(watch.keyword)}'</b> · 지역 <b>'${esc(watch.location || '전체')}'</b> 조건의 신규 매물 <b>${items.length}</b>건
       </p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${cards}</table>
       <div style="margin:18px 0 0;padding:12px 14px;background:#fff4ec;border-radius:8px;">
@@ -125,7 +128,7 @@ function buildHtml(watch, items, message) {
       </div>
       <p style="margin:14px 0 0;color:#999;font-size:12px;">
         <b>💬 빠른 채팅</b> 버튼 → 인사말 <b>복사</b> → <b>매물에서 "채팅하기"</b>에 붙여넣기 후 전송하세요.<br>
-        (계정 보호 및 당근마켓 이용약관 준수를 위해 전송은 직접 완료합니다.)<br>
+        (계정 보호 및 각 사이트 이용약관 준수를 위해 전송은 직접 완료합니다.)<br>
         이 메일은 GitHub Actions 자동 알림으로 발송되었습니다.
       </p>
     </div>

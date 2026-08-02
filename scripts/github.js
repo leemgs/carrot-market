@@ -19,9 +19,10 @@ const ISSUE_LABEL = '당근마켓-알림';
  * @param {object} params.watch        {keyword, location}
  * @param {Array}  params.items        신규 매물 배열
  * @param {string} params.chatMessage  채팅 인사말
+ * @param {object} [params.source]     {name, issueLabel} 소스(사이트) 정보
  * @returns {Promise<{number:number, html_url:string}>}
  */
-async function createIssue({ watch, items, chatMessage }) {
+async function createIssue({ watch, items, chatMessage, source }) {
   const token = process.env.GITHUB_TOKEN;
   const repo = process.env.GITHUB_REPOSITORY;
   if (!token || !repo) {
@@ -29,9 +30,12 @@ async function createIssue({ watch, items, chatMessage }) {
   }
   const apiUrl = process.env.GITHUB_API_URL || 'https://api.github.com';
 
+  const siteName = (source && source.name) || '당근마켓';
+  const label = (source && source.issueLabel) || ISSUE_LABEL;
+
   const today = new Date().toISOString().slice(0, 10);
-  const title = `[당근마켓 신규] '${watch.keyword}' (${watch.location || '전체'}) ${items.length}건 · ${today}`;
-  const body = buildIssueBody(watch, items, chatMessage);
+  const title = `[${siteName} 신규] '${watch.keyword}' (${watch.location || '전체'}) ${items.length}건 · ${today}`;
+  const body = buildIssueBody(watch, items, chatMessage, siteName);
 
   const res = await fetch(`${apiUrl}/repos/${repo}/issues`, {
     method: 'POST',
@@ -41,7 +45,7 @@ async function createIssue({ watch, items, chatMessage }) {
       'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ title, body, labels: [ISSUE_LABEL] }),
+    body: JSON.stringify({ title, body, labels: [label] }),
   });
 
   if (!res.ok) {
@@ -55,12 +59,13 @@ async function createIssue({ watch, items, chatMessage }) {
   return { number: json.number, html_url: json.html_url };
 }
 
-function buildIssueBody(watch, items, chatMessage) {
+function buildIssueBody(watch, items, chatMessage, siteName) {
   const message = chatMessage || '안녕하세요. 제가 구매 가능할까요?';
+  const site = siteName || '당근마켓';
   const lines = [
-    `**키워드:** \`${watch.keyword}\` · **지역:** \`${watch.location || '전체'}\``,
+    `**사이트:** \`${site}\` · **키워드:** \`${watch.keyword}\` · **지역:** \`${watch.location || '전체'}\``,
     '',
-    `당근마켓에 조건에 맞는 신규 매물 **${items.length}건**이 올라왔습니다.`,
+    `${site}에 조건에 맞는 신규 매물 **${items.length}건**이 올라왔습니다.`,
     '',
   ];
 

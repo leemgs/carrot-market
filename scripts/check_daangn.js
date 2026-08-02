@@ -15,9 +15,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const { searchDaangn } = require('./daangn');
 const { sendNewItemsEmail } = require('./mailer');
 const { createIssue } = require('./github');
+const { SOURCES, watchSites } = require('./sources');
 
 const ROOT = path.resolve(__dirname, '..');
 const CONFIG_PATH = path.join(ROOT, 'config', 'watches.json');
@@ -103,75 +103,86 @@ async function main() {
 
     const priceNote =
       Number(watch.maxPrice) > 0 ? ` 희망가='≤${Number(watch.maxPrice).toLocaleString('ko-KR')}원'` : '';
-    console.log(
-      `\n▶ 검색: 키워드='${watch.keyword}' 지역='${watch.location || '(전체)'}'${priceNote} → ${to.join(', ')}`
-    );
+    const sites = watchSites(watch);
 
-    let found;
-    try {
-      found = await searchDaangn(watch);
-    } catch (err) {
-      console.error(`  ✖ 검색 실패: ${err.message}`);
-      errors.push(`${id}: ${err.message}`);
-      continue;
-    }
+    // 감시 항목마다 지정된 사이트(당근/중고나라 등)를 각각 검색한다.
+    for (const siteKey of sites) {
+      const source = SOURCES[siteKey];
+      if (!source) continue;
+      // 상태는 (감시항목 × 사이트) 별로 분리. 당근은 과거 flat 키(state[id])를 폴백으로 읽는다.
+      const stateKey = `${id}::${siteKey}`;
+      const legacy = siteKey === 'daangn' ? state[id] : undefined;
 
-    console.log(`  조건 일치 매물: ${found.length}건`);
-
-    const seen = new Set(state[id] || []);
-    const newItems = found.filter((it) => !seen.has(it.id));
-
-    if (newItems.length === 0) {
-      console.log('  신규 매물 없음.');
-      continue;
-    }
-
-    console.log(`  ✨ 신규 매물 ${newItems.length}건 발견`);
-    totalNew += newItems.length;
-
-    if (dryRun) {
-      newItems.forEach((it) =>
-        console.log(`    - ${it.title} | ${it.price} | ${it.region} | ${it.url}`)
+      console.log(
+        `\n▶ [${source.name}] 키워드='${watch.keyword}' 지역='${watch.location || '(전체)'}'${priceNote} → ${to.join(', ')}`
       );
-      // DRY_RUN 에서는 알림/상태갱신을 하지 않는다.
-      continue;
-    }
 
-    // 두 채널(이슈/이메일)을 각각 시도한다. 하나라도 성공하면 "알림함"으로 간주.
-    let notified = false;
-
-    if (wantIssue) {
+      let found;
       try {
-        const issue = await createIssue({ watch, items: newItems, chatMessage });
-        console.log(`  🐙 GitHub 이슈 등록 완료 → #${issue.number} ${issue.html_url}`);
-        notified = true;
+        found = await source.search(watch);
       } catch (err) {
-        console.error(`  ✖ 이슈 등록 실패: ${err.message}`);
-        errors.push(`${id} 이슈: ${err.message}`);
+        console.error(`  ✖ 검색 실패: ${err.message}`);
+        errors.push(`${id}/${siteKey}: ${err.message}`);
+        continue;
       }
-    }
 
-    if (wantEmail) {
-      try {
-        await sendNewItemsEmail({ to, watch, items: newItems, chatMessage });
-        console.log(`  ✉ 이메일 발송 완료 → ${to.join(', ')}`);
-        notified = true;
-      } catch (err) {
-        console.error(`  ✖ 이메일 발송 실패: ${err.message}`);
-        errors.push(`${id} 이메일: ${err.message}`);
+      console.log(`  조건 일치 매물: ${found.length}건`);
+
+      const seen = new Set(state[stateKey] || legacy || []);
+      const newItems = found.filter((it) => !seen.has(it.id));
+
+      if (newItems.length === 0) {
+        console.log('  신규 매물 없음.');
+        continue;
       }
-    }
 
-    if (!notified) {
-      // 모든 알림 채널이 실패하면 상태를 갱신하지 않아 다음 실행 때 재시도한다.
-      console.warn('  ⚠ 알림 실패로 상태를 갱신하지 않습니다(다음 실행에 재시도).');
-      continue;
-    }
+      console.log(`  ✨ 신규 매물 ${newItems.length}건 발견`);
+      totalNew += newItems.length;
 
-    // 상태 갱신: 이번에 조건 일치한 모든 매물 ID 를 기록 (신규 + 기존)
-    const merged = [...found.map((it) => it.id), ...(state[id] || [])];
-    state[id] = Array.from(new Set(merged)).slice(0, MAX_SEEN_PER_WATCH);
-    stateChanged = true;
+      if (dryRun) {
+        newItems.forEach((it) =>
+          console.log(`    - ${it.title} | ${it.price} | ${it.region} | ${it.url}`)
+        );
+        // DRY_RUN 에서는 알림/상태갱신을 하지 않는다.
+        continue;
+      }
+
+      // 두 채널(이슈/이메일)을 각각 시도한다. 하나라도 성공하면 "알림함"으로 간주.
+      let notified = false;
+
+      if (wantIssue) {
+        try {
+          const issue = await createIssue({ watch, items: newItems, chatMessage, source });
+          console.log(`  🐙 GitHub 이슈 등록 완료 → #${issue.number} ${issue.html_url}`);
+          notified = true;
+        } catch (err) {
+          console.error(`  ✖ 이슈 등록 실패: ${err.message}`);
+          errors.push(`${id}/${siteKey} 이슈: ${err.message}`);
+        }
+      }
+
+      if (wantEmail) {
+        try {
+          await sendNewItemsEmail({ to, watch, items: newItems, chatMessage, siteName: source.name });
+          console.log(`  ✉ 이메일 발송 완료 → ${to.join(', ')}`);
+          notified = true;
+        } catch (err) {
+          console.error(`  ✖ 이메일 발송 실패: ${err.message}`);
+          errors.push(`${id}/${siteKey} 이메일: ${err.message}`);
+        }
+      }
+
+      if (!notified) {
+        // 모든 알림 채널이 실패하면 상태를 갱신하지 않아 다음 실행 때 재시도한다.
+        console.warn('  ⚠ 알림 실패로 상태를 갱신하지 않습니다(다음 실행에 재시도).');
+        continue;
+      }
+
+      // 상태 갱신: 이번에 조건 일치한 모든 매물 ID 를 기록 (신규 + 기존)
+      const merged = [...found.map((it) => it.id), ...(state[stateKey] || legacy || [])];
+      state[stateKey] = Array.from(new Set(merged)).slice(0, MAX_SEEN_PER_WATCH);
+      stateChanged = true;
+    }
   }
 
   if (stateChanged) {

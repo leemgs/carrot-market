@@ -20,6 +20,9 @@ try {
   /* 데이터 파일이 없어도 기본 매칭은 동작 */
 }
 
+// 가격 정규화 유틸 (당근/중고나라 공용)
+const { formatPrice, parsePriceValue } = require('./price');
+
 // 검색 URL 템플릿. {kw} 는 URL 인코딩된 키워드로 치환된다.
 // 환경변수 DAANGN_SEARCH_URL 로 재정의 가능.
 const DEFAULT_SEARCH_URL = 'https://www.daangn.com/kr/buy-sell/?search={kw}';
@@ -376,37 +379,6 @@ function extractIdFromUrl(url) {
   const mGeneric = String(url).match(/\/([0-9a-zA-Z]{6,})\/?(?:[?#]|$)/);
   if (mGeneric) return mGeneric[1];
   return '';
-}
-
-// 가격 값을 "16,000원" 형태로 정규화한다.
-//  - "16000.0", "16000.0 KRW", "16,000원" → "16,000원"
-//  - 0 → "나눔"
-//  - "나눔", "가격 제안" 등 숫자가 아닌 표기는 소수 꼬리만 정리해 그대로 둔다.
-function formatPrice(raw) {
-  if (raw == null) return '';
-  let s = String(raw).trim();
-  if (!s) return '';
-  s = s.replace(/\bKRW\b/gi, '').replace(/\s+/g, ' ').trim();
-  // 숫자(콤마/소수점 허용) + 선택적 "원" 만으로 이루어진 경우
-  if (/^[\d,]+(?:\.\d+)?\s*원?$/.test(s)) {
-    const n = Math.round(parseFloat(s.replace(/[,원\s]/g, '')));
-    if (!Number.isFinite(n)) return s;
-    if (n === 0) return '나눔';
-    return n.toLocaleString('ko-KR') + '원';
-  }
-  // 텍스트가 섞인 경우: "16000.0" 같은 소수 꼬리만 정리
-  return s.replace(/(\d)\.0+(?!\d)/g, '$1');
-}
-
-// 가격 문자열에서 숫자(원)만 추출한다. 나눔/무료 → 0, 가격 불명 → null.
-function parsePriceValue(raw) {
-  if (raw == null) return null;
-  const s = String(raw).replace(/\bKRW\b/gi, '').trim();
-  if (!s) return null;
-  if (/나눔|무료/.test(s)) return 0;
-  const m = s.replace(/,/g, '').match(/\d+(?:\.\d+)?/);
-  if (!m) return null; // "가격 제안" 등 숫자가 없는 경우
-  return Math.round(parseFloat(m[0]));
 }
 
 function extractPrice(node) {

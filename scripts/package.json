@@ -1,5 +1,5 @@
 {
-  "name": "carrot-market-alert",
+  "name": "used-notifier",
   "version": "1.0.0",
   "private": true,
   "description": "당근마켓 신규 매물 키워드/지역 알림 (Google SMTP 이메일)",

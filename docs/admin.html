@@ -51,7 +51,7 @@
         <div class="row">
           <label style="flex:1;">
             저장소 (owner/repo)
-            <input id="repo" type="text" placeholder="leemgs/carrot-market" />
+            <input id="repo" type="text" placeholder="leemgs/used-notifier" />
           </label>
           <label style="width:130px;">
             브랜치
@@ -95,7 +95,7 @@
         <table class="watch-table">
           <thead>
             <tr>
-              <th>사용</th><th>키워드</th><th>지역</th><th>희망가</th><th>이메일</th><th>인사말</th><th></th>
+              <th>사용</th><th>키워드</th><th>사이트</th><th>지역</th><th>희망가</th><th>이메일</th><th>인사말</th><th></th>
             </tr>
           </thead>
           <tbody id="watch-tbody"></tbody>
@@ -112,6 +112,13 @@
         <label>
           조회할 제품 (키워드) <span class="req">*</span>
           <input id="f-keyword" type="text" placeholder="예: 가마솥" required />
+        </label>
+        <label>
+          검색할 사이트
+          <div class="btn-row" style="margin-top:2px;">
+            <label class="check"><input type="checkbox" name="f-site" value="daangn" checked /> 🥕 당근마켓</label>
+            <label class="check"><input type="checkbox" name="f-site" value="joongna" checked /> 🟢 중고나라</label>
+          </div>
         </label>
         <label>
           구매 가능 위치 (지역)

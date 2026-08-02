@@ -35,11 +35,15 @@
         '<a href="./admin.html">감시 목록 관리</a>에서 추가하세요.</p>';
       return;
     }
+    const siteNames = Object.fromEntries((GHData.SITES || []).map((s) => [s.key, s.name]));
     chipsEl.innerHTML = watches
       .map((w) => {
         const off = w.enabled === false;
         const loc = w.location ? ` · ${esc(w.location)}` : ' · 전국';
-        return `<span class="chip${off ? ' off' : ''}"><span class="dot"></span>${esc(w.keyword)}<span style="opacity:.7">${loc}</span></span>`;
+        const sites = Array.isArray(w.sites) && w.sites.length ? w.sites : ['daangn', 'joongna'];
+        const siteTag = ' · ' + sites.map((k) => esc(siteNames[k] || k)).join('+');
+        const price = Number(w.maxPrice) > 0 ? ` · ≤${Number(w.maxPrice).toLocaleString('ko-KR')}원` : '';
+        return `<span class="chip${off ? ' off' : ''}"><span class="dot"></span>${esc(w.keyword)}<span style="opacity:.7">${loc}${siteTag}${price}</span></span>`;
       })
       .join('');
   }
@@ -81,7 +85,8 @@
     const seenKw = new Set();
     const recent = [];
     for (const it of sorted) {
-      const key = it.keyword || it.rawTitle;
+      // 사이트 + 키워드 조합으로 최신 1건만 (당근/중고나라를 각각 표시)
+      const key = `${it.site}::${it.keyword || it.rawTitle}`;
       if (seenKw.has(key)) continue;
       seenKw.add(key);
       recent.push(it);
