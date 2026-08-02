@@ -20,9 +20,10 @@
     const s = (GHData.SITES || []).find((x) => x.key === key);
     return s ? s.name : '전체';
   }
+  const SITE_EMOJI = { daangn: '🥕', joongna: '🟢', bunjang: '⚡' };
   if (titleEl) {
     titleEl.textContent =
-      siteFilter === 'all' ? '🔔 매물 알림' : `${siteFilter === 'daangn' ? '🥕' : '🟢'} ${siteName(siteFilter)} 알림`;
+      siteFilter === 'all' ? '🔔 매물 알림' : `${SITE_EMOJI[siteFilter] || '🔔'} ${siteName(siteFilter)} 알림`;
   }
 
   async function load() {

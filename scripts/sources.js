@@ -8,6 +8,7 @@
 
 const { searchDaangn } = require('./daangn');
 const { searchJoongna } = require('./joongna');
+const { searchBunjang } = require('./bunjang');
 
 const SOURCES = {
   daangn: {
@@ -22,10 +23,16 @@ const SOURCES = {
     issueLabel: '중고나라-알림',
     search: searchJoongna,
   },
+  bunjang: {
+    key: 'bunjang',
+    name: '번개장터',
+    issueLabel: '번개장터-알림',
+    search: searchBunjang,
+  },
 };
 
-// 감시 항목이 sites 를 지정하지 않으면 모든 사이트에서 검색 (당근 + 중고나라)
-const DEFAULT_SITES = ['daangn', 'joongna'];
+// 감시 항목이 sites 를 지정하지 않으면 모든 사이트에서 검색 (당근 + 중고나라 + 번개장터)
+const DEFAULT_SITES = ['daangn', 'joongna', 'bunjang'];
 
 // watch.sites 를 유효한 사이트 키 배열로 정규화
 function watchSites(watch) {

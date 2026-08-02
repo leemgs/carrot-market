@@ -1,18 +1,18 @@
 # 🛒 중고 알리미 (used-notifier)
 
 원하는 **제품 키워드**·**구매 지역**·**희망 금액**을 등록하면, [당근마켓](https://www.daangn.com/kr/)과
-[중고나라](https://web.joongna.com)에 조건에 맞는 **신규 매물**이 올라올 때 **Gmail 이메일**과
+[중고나라](https://web.joongna.com)·[번개장터](https://www.bunjang.com)에 조건에 맞는 **신규 매물**이 올라올 때 **Gmail 이메일**과
 **GitHub 이슈**로 알림을 보내주는 웹앱입니다.
 
 > 예시) 제품 `가마솥`, 지역 `수원시`, 희망가 `100,000원` 을 등록 → 판매 위치가 수원이면서 제목에
-> "가마솥"이 포함되고 가격이 10만원 이하인 새 매물이 당근마켓/중고나라에 올라오면, 지정한 이메일로
+> "가마솥"이 포함되고 가격이 10만원 이하인 새 매물이 당근마켓/중고나라/번개장터에 올라오면, 지정한 이메일로
 > 매물 정보와 구매 링크가 도착합니다. 감시 항목마다 검색할 사이트를 선택할 수 있습니다.
 
 ---
 
 ## 🧩 한눈에 보기
 
-감시 목록(`config/watches.json`)을 기준으로 당근마켓·중고나라를 **검색**하고, 신규 매물만 **선별**해
+감시 목록(`config/watches.json`)을 기준으로 당근마켓·중고나라·번개장터를 **검색**하고, 신규 매물만 **선별**해
 **이메일·GitHub 이슈** 두 갈래로 **알림**을 보내는 단일 파이프라인입니다. GitHub Actions가
 실행되면 **한 job 안에서 약 3분마다 반복 점검**하여 신규 매물을 빠르게 잡아냅니다.
 
@@ -200,7 +200,7 @@ flowchart TD
 
 ### 3. 감시 항목 등록
 
-**방법 A — 웹 관리자 (권장):** [관리자 페이지](https://leemgs.github.io/carrot-market/admin.html)에서
+**방법 A — 웹 관리자 (권장):** [관리자 페이지](https://leemgs.github.io/used-notifier/admin.html)에서
 감시 항목을 **조회·추가·수정·삭제**하고 GitHub에 바로 저장합니다.
 파일을 직접 편집할 필요가 없습니다.
 
@@ -209,7 +209,7 @@ flowchart TD
 - 토큰은 브라우저 `localStorage` 에만 저장되며 서버로 전송되지 않습니다.
   공용 PC에서는 사용 후 "토큰 삭제"를 누르세요.
 
-**방법 B — 수동 편집:** [홈페이지](https://leemgs.github.io/carrot-market/)에서 설정 코드를 생성하거나
+**방법 B — 수동 편집:** [홈페이지](https://leemgs.github.io/used-notifier/)에서 설정 코드를 생성하거나
 `config/watches.json` 을 직접 편집합니다.
 
 ```json
@@ -230,7 +230,7 @@ flowchart TD
 | 필드 | 설명 |
 | --- | --- |
 | `keyword` | 조회할 제품 키워드 (매물 제목에 포함되면 매칭) |
-| `sites` | 검색할 사이트 배열 `["daangn","joongna"]`. **미지정이면 전체(당근+중고나라)** |
+| `sites` | 검색할 사이트 배열 `["daangn","joongna","bunjang"]`. **미지정이면 전체(당근+중고나라+번개장터)** |
 | `location` | 구매 가능 지역 (매물 지역/제목에 포함되면 매칭). **비우면 전국** |
 | `maxPrice` | 희망 금액(원). 이 금액 **이하**인 매물만 알림. 0/미지정이면 제한 없음. 가격 미표기 매물은 포함 |
 | `email` | 알림 수신 이메일 (없으면 `defaultEmail` 사용). **여러 명**은 배열 `["a@x.com","b@y.com"]` 또는 쉼표구분 문자열 `"a@x.com, b@y.com"` |
@@ -269,7 +269,7 @@ flowchart TD
 > 채팅 화면 이동까지만** 자동화하고, 최종 전송은 사용자가 직접 누르도록 설계했습니다.
 
 `CHAT_HELPER_URL` 환경변수로 도우미 페이지 주소를 바꿀 수 있습니다.
-(기본값: `https://leemgs.github.io/carrot-market/chat.html`)
+(기본값: `https://leemgs.github.io/used-notifier/chat.html`)
 
 ### 4. GitHub Pages 활성화 (홈페이지)
 저장소 **Settings → Pages → Source** 를 `main` 브랜치 `/docs` 폴더로 지정하면

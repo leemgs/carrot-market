@@ -44,8 +44,8 @@
           },
           "sites": {
             "type": "array",
-            "description": "검색할 사이트 키 목록. 미지정이면 전체(당근+중고나라).",
-            "items": { "type": "string", "enum": ["daangn", "joongna"] }
+            "description": "검색할 사이트 키 목록. 미지정이면 전체(당근+중고나라+번개장터).",
+            "items": { "type": "string", "enum": ["daangn", "joongna", "bunjang"] }
           },
           "maxPrice": {
             "type": "number",

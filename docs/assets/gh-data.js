@@ -22,6 +22,7 @@ const GHData = (function () {
   const SITES = [
     { key: 'daangn', name: '당근마켓', label: '당근마켓-알림' },
     { key: 'joongna', name: '중고나라', label: '중고나라-알림' },
+    { key: 'bunjang', name: '번개장터', label: '번개장터-알림' },
   ];
   const SITE_BY_LABEL = Object.fromEntries(SITES.map((s) => [s.label, s]));
   const SITE_BY_KEY = Object.fromEntries(SITES.map((s) => [s.key, s]));

@@ -21,8 +21,8 @@ const DEFAULT_REPO = (function () {
 const DEFAULT_BRANCH = 'main';
 
 // 사이트(소스) 메타
-const SITE_META = { daangn: '🥕 당근마켓', joongna: '🟢 중고나라' };
-const ALL_SITES = ['daangn', 'joongna'];
+const SITE_META = { daangn: '🥕 당근마켓', joongna: '🟢 중고나라', bunjang: '⚡ 번개장터' };
+const ALL_SITES = ['daangn', 'joongna', 'bunjang'];
 // watch.sites 정규화 (미지정 → 전체)
 function watchSitesOf(w) {
   const s = Array.isArray(w && w.sites) ? w.sites.filter((k) => SITE_META[k]) : [];

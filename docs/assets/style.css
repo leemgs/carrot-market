@@ -319,9 +319,11 @@ footer a { color: var(--carrot-dark); }
 .badge.site { background: #eef2ff; color: #3730a3; }
 .badge.site.site-daangn { background: #fff1e6; color: #c2410c; }
 .badge.site.site-joongna { background: #e7f6ec; color: #15803d; }
+.badge.site.site-bunjang { background: #ffe9ea; color: #dc2626; }
 .site-chip {
   background: #fff1e6; color: #c2410c; border-color: #ffd9bd;
   margin: 2px 4px 2px 0; padding: 3px 9px; font-size: 12px;
 }
 .site-chip.site-joongna { background: #e7f6ec; color: #15803d; border-color: #bfe6cd; }
+.site-chip.site-bunjang { background: #ffe9ea; color: #dc2626; border-color: #f5c2c4; }
 .seg-site button.on { background: #4f46e5; }

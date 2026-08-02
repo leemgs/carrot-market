@@ -21,6 +21,7 @@
     { id: 'dashboard', label: '대시보드', icon: '📊', href: './index.html' },
     { id: 'issues', site: 'daangn', label: '당근마켓', icon: '🥕', href: './issues.html?site=daangn' },
     { id: 'issues', site: 'joongna', label: '중고나라', icon: '🟢', href: './issues.html?site=joongna' },
+    { id: 'issues', site: 'bunjang', label: '번개장터', icon: '⚡', href: './issues.html?site=bunjang' },
     { id: 'admin', label: '감시 목록', icon: '⚙️', href: './admin.html' },
     { id: 'add', label: '간편 등록', icon: '➕', href: './add.html' },
     { id: 'help', label: '도움말', icon: '❓', href: './help.html' },

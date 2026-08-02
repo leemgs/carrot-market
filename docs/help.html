@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>❓ 도움말 · 중고 알리미</title>
-  <meta name="description" content="당근마켓·중고나라 신규 매물 알림의 동작 방식과 Gmail/GitHub 설정 방법을 안내합니다." />
+  <meta name="description" content="당근마켓·중고나라·번개장터 신규 매물 알림의 동작 방식과 Gmail/GitHub 설정 방법을 안내합니다." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%95%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./assets/style.css" />
 </head>
@@ -23,7 +23,7 @@
       <h2>어떻게 동작하나요?</h2>
       <ol>
         <li><b>키워드·사이트·지역·희망가·이메일</b>을 입력해 감시 항목을 만듭니다.</li>
-        <li><b>GitHub Actions</b>가 선택한 사이트(<b>당근마켓·중고나라</b>)를 주기적으로 검색합니다.</li>
+        <li><b>GitHub Actions</b>가 선택한 사이트(<b>당근마켓·중고나라·번개장터</b>)를 주기적으로 검색합니다.</li>
         <li>조건(제목에 키워드 포함 + 지역 + 희망가 이하)에 맞는 <b>신규 매물</b>을 찾으면</li>
         <li><b>GitHub 이슈 등록</b>과 <b>Gmail 이메일 발송</b>을 함께 수행합니다.</li>
         <li>이메일/이슈의 <b>💬 빠른 채팅</b> → 인사말 <b>복사</b> → 매물에서 <b>"채팅하기"</b>에 붙여넣기!</li>
@@ -34,18 +34,19 @@
       <h2>지원 사이트</h2>
       <ul class="secrets">
         <li><b>🥕 당근마켓</b> — 안정적으로 검색·수집됩니다.</li>
-        <li><b>🟢 중고나라</b>(web.joongna.com) — 감시 항목에서 선택하면 함께 검색합니다.
-          사이트 구조 변화에 따라 수집이 불안정할 수 있어, 결과가 없으면 잠시 후 다시 확인하세요.</li>
+        <li><b>🟢 중고나라</b>(web.joongna.com) — 검색 API로 수집합니다.</li>
+        <li><b>⚡ 번개장터</b>(bunjang.com) — 검색 API로 수집합니다.</li>
       </ul>
-      <p class="hint">감시 항목마다 <b>당근마켓 / 중고나라</b>를 개별 선택할 수 있습니다(기본값: 둘 다).</p>
+      <p class="hint">감시 항목마다 <b>당근마켓 / 중고나라 / 번개장터</b>를 개별 선택할 수 있습니다(기본값: 모두).
+        사이트 구조 변화에 따라 일부 사이트 수집이 일시적으로 불안정할 수 있습니다.</p>
     </section>
 
     <section class="card">
       <h2>알림 채널</h2>
       <p class="hint" style="font-size:14px;">신규 매물이 발견되면 두 채널로 동시에 알립니다.</p>
       <ul class="secrets">
-        <li><b>🔔 GitHub 이슈</b> — 사이트별 라벨(<code>당근마켓-알림</code>·<code>중고나라-알림</code>)로 이슈가 생성됩니다.
-          별도 설정 없이 동작하며, 상단 <a href="./issues.html?site=daangn">당근마켓</a>·<a href="./issues.html?site=joongna">중고나라</a> 메뉴에서 목록으로 볼 수 있습니다.</li>
+        <li><b>🔔 GitHub 이슈</b> — 사이트별 라벨(<code>당근마켓-알림</code>·<code>중고나라-알림</code>·<code>번개장터-알림</code>)로 이슈가 생성됩니다.
+          별도 설정 없이 동작하며, 상단 <a href="./issues.html?site=daangn">당근마켓</a>·<a href="./issues.html?site=joongna">중고나라</a>·<a href="./issues.html?site=bunjang">번개장터</a> 메뉴에서 목록으로 볼 수 있습니다.</li>
         <li><b>✉️ 이메일</b> — 아래 Gmail SMTP 설정이 필요합니다.</li>
       </ul>
     </section>
