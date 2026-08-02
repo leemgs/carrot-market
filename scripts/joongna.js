@@ -157,6 +157,18 @@ async function searchJoongna(watch) {
     items.slice(0, 5).forEach((it) =>
       console.log(`    [DEBUG] · ${it.title || '(제목없음)'} | ${it.price || '-'} | 지역:${it.region || '(없음)'} | ${it.url}`)
     );
+    // 구조 진단: 어떤 형식으로 데이터가 임베드돼 있는지 파악
+    const sig = (re) => (html.match(re) || []).length;
+    console.log(
+      `    [DEBUG] 신호 next_f=${sig(/__next_f\.push/g)} seq=${sig(/"seq"/g)} productSeq=${sig(/"productSeq"/g)} title=${sig(/"title"/g)} productTitle=${sig(/"productTitle"/g)} price=${sig(/"price"/g)}`
+    );
+    console.log(
+      `    [DEBUG] api호스트 search-api=${/search-api\.joongna\.com/.test(html)} api=${/[^-]api\.joongna\.com/.test(html)}`
+    );
+    const idx = html.search(/"(?:productSeq|seq|productTitle|title)"\s*:/);
+    if (idx >= 0) {
+      console.log(`    [DEBUG] 스니펫@${idx}: ${html.slice(idx, idx + 500).replace(/\s+/g, ' ')}`);
+    }
   }
   return matched;
 }
