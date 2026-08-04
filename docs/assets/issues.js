@@ -26,10 +26,10 @@
       siteFilter === 'all' ? '🔔 매물 알림' : `${SITE_EMOJI[siteFilter] || '🔔'} ${siteName(siteFilter)} 알림`;
   }
 
-  async function load() {
+  async function load(force) {
     listEl.innerHTML = '<p class="state-msg"><span class="spinner"></span> 불러오는 중…</p>';
     try {
-      all = await GHData.fetchIssues();
+      all = await GHData.fetchIssues(force);
       render();
     } catch (e) {
       listEl.innerHTML = `<p class="state-msg">${esc(e.message)}</p>`;
@@ -91,7 +91,7 @@
     render();
   });
 
-  $('reload-btn').addEventListener('click', load);
+  $('reload-btn').addEventListener('click', () => load(true));
 
   load();
 })();

@@ -39,16 +39,47 @@ const GHData = (function () {
     };
   }
 
-  // 사이트별 라벨로 각각 이슈를 받아 site 태그를 붙여 합친다.
-  async function fetchIssues() {
-    const results = await Promise.all(SITES.map((s) => fetchIssuesForSite(s)));
-    return results.flat();
+  // 미인증 GitHub API 한도(60회/시간·IP)를 아끼기 위한 세션 캐시.
+  // 회사망 공유 IP 환경에서 한도 초과 안내가 자주 뜨는 것을 완화한다.
+  const CACHE_KEY = `ghIssues:${REPO}`;
+  const CACHE_TTL_MS = 3 * 60 * 1000; // 3분
+
+  function readIssuesCache() {
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const { t, data } = JSON.parse(raw);
+      if (!t || Date.now() - t > CACHE_TTL_MS || !Array.isArray(data)) return null;
+      return data;
+    } catch (_) {
+      return null;
+    }
   }
 
-  async function fetchIssuesForSite(site) {
-    const url =
-      `https://api.github.com/repos/${REPO}/issues` +
-      `?state=all&labels=${encodeURIComponent(site.label)}&per_page=100`;
+  function writeIssuesCache(data) {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), data }));
+    } catch (_) {
+      /* 저장 실패(용량/프라이빗 모드)는 무시 */
+    }
+  }
+
+  // 이슈에 우리 사이트 라벨(당근/중고나라/번개장터)이 하나라도 붙어 있는지.
+  function hasSiteLabel(issue) {
+    return (issue.labels || [])
+      .map((l) => (typeof l === 'string' ? l : l && l.name))
+      .some((n) => SITE_BY_LABEL[n]);
+  }
+
+  // 이슈를 한 번의 API 호출로 모두 받아 클라이언트에서 사이트별로 분류한다.
+  // (예전에는 라벨별로 3회 호출했으나, 한도 절약을 위해 1회로 통합)
+  async function fetchIssues(force) {
+    if (!force) {
+      const cached = readIssuesCache();
+      if (cached) return cached;
+    }
+
+    const url = `https://api.github.com/repos/${REPO}/issues?state=all&per_page=100`;
     const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
     if (!res.ok) {
       if (res.status === 403) {
@@ -57,7 +88,12 @@ const GHData = (function () {
       throw new Error(`이슈 목록 로드 실패 (HTTP ${res.status})`);
     }
     const arr = await res.json();
-    return arr.filter((it) => !it.pull_request).map((it) => parseIssue(it, site));
+    // PR 제외 + 우리 라벨이 붙은 이슈만. site 인자 없이 넘기면 parseIssue 가 라벨로 사이트를 유추.
+    const out = arr
+      .filter((it) => !it.pull_request && hasSiteLabel(it))
+      .map((it) => parseIssue(it));
+    writeIssuesCache(out);
+    return out;
   }
 
   // 제목 형식: [당근마켓 신규] '키워드' (지역) N건 · YYYY-MM-DD
