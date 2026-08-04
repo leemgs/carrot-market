@@ -163,7 +163,7 @@ async function main() {
 
       if (wantEmail) {
         try {
-          await sendNewItemsEmail({ to, watch, items: newItems, chatMessage, siteName: source.name });
+          await sendNewItemsEmail({ to, watch, items: newItems, chatMessage, source });
           console.log(`  ✉ 이메일 발송 완료 → ${to.join(', ')}`);
           notified = true;
         } catch (err) {

@@ -1,6 +1,7 @@
 :root {
   --carrot: #ff6f0f;
   --carrot-dark: #e5620a;
+  --carrot-lite: #ff9a3d;
   --ink: #1f1f1f;
   --muted: #6b7280;
   --bg: #f6f7f9;
@@ -22,7 +23,7 @@ body {
 .wrap { max-width: 680px; margin: 0 auto; padding: 0 20px; }
 
 .hero {
-  background: linear-gradient(135deg, var(--carrot), #ff9a3d);
+  background: linear-gradient(135deg, var(--carrot), var(--carrot-lite));
   color: #fff;
   padding: 48px 0 40px;
   text-align: center;

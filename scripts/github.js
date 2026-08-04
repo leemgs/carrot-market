@@ -31,11 +31,12 @@ async function createIssue({ watch, items, chatMessage, source }) {
   const apiUrl = process.env.GITHUB_API_URL || 'https://api.github.com';
 
   const siteName = (source && source.name) || '당근마켓';
+  const siteKey = source && source.key;
   const label = (source && source.issueLabel) || ISSUE_LABEL;
 
   const today = new Date().toISOString().slice(0, 10);
   const title = `[${siteName} 신규] '${watch.keyword}' (${watch.location || '전체'}) ${items.length}건 · ${today}`;
-  const body = buildIssueBody(watch, items, chatMessage, siteName);
+  const body = buildIssueBody(watch, items, chatMessage, siteName, siteKey);
 
   const res = await fetch(`${apiUrl}/repos/${repo}/issues`, {
     method: 'POST',
@@ -59,7 +60,7 @@ async function createIssue({ watch, items, chatMessage, source }) {
   return { number: json.number, html_url: json.html_url };
 }
 
-function buildIssueBody(watch, items, chatMessage, siteName) {
+function buildIssueBody(watch, items, chatMessage, siteName, siteKey) {
   const message = chatMessage || '안녕하세요. 제가 구매 가능할까요?';
   const site = siteName || '당근마켓';
   const lines = [
@@ -73,8 +74,8 @@ function buildIssueBody(watch, items, chatMessage, siteName) {
     lines.push(`### ${i + 1}. ${it.title || '(제목 없음)'}`);
     if (it.price) lines.push(`- 가격: ${it.price}`);
     if (it.region) lines.push(`- 지역: ${it.region}`);
-    lines.push(`- 매물 보기: ${it.url}`);
-    lines.push(`- 💬 빠른 채팅: ${chatHelperLink(it, message)}`);
+    lines.push(`- ${site} 매물 보기: ${it.url}`);
+    lines.push(`- 💬 빠른 채팅: ${chatHelperLink(it, message, siteKey)}`);
     lines.push('');
   });
 

@@ -11,6 +11,7 @@
 
 const nodemailer = require('nodemailer');
 const { chatHelperLink } = require('./links');
+const { themeFor } = require('./theme');
 
 function createTransport() {
   const user = process.env.GMAIL_USER;
@@ -34,11 +35,13 @@ function createTransport() {
  * @param {object} params.watch         {keyword, location}
  * @param {Array}  params.items         새로 발견된 매물 배열
  * @param {string} [params.chatMessage] 채팅 도우미에 미리 채울 인사말
- * @param {string} [params.siteName]    소스(사이트) 이름 (예: 당근마켓, 중고나라)
+ * @param {object} [params.source]      소스(사이트) 정보 {key, name} — 테마/링크 문구 결정
+ * @param {string} [params.siteName]    (구버전 호환) 소스 이름. source 미지정 시 사용.
  */
-async function sendNewItemsEmail({ to, watch, items, chatMessage, siteName }) {
+async function sendNewItemsEmail({ to, watch, items, chatMessage, source, siteName }) {
   const transporter = createTransport();
-  const site = siteName || '당근마켓';
+  const theme = themeFor(source && source.key);
+  const site = (source && source.name) || siteName || theme.name;
   const fromName = process.env.MAIL_FROM_NAME || '중고 알리미';
   const from = `"${fromName}" <${process.env.GMAIL_USER}>`;
   const message = chatMessage || '안녕하세요. 제가 구매 가능할까요?';
@@ -49,22 +52,22 @@ async function sendNewItemsEmail({ to, watch, items, chatMessage, siteName }) {
     from,
     to,
     subject,
-    text: buildText(watch, items, message, site),
-    html: buildHtml(watch, items, message, site),
+    text: buildText(watch, items, message, site, theme),
+    html: buildHtml(watch, items, message, site, theme),
   });
 }
 
-function buildText(watch, items, message, site) {
+function buildText(watch, items, message, site, theme) {
   const lines = [
-    `${site || '당근마켓'}에 '${watch.keyword}' 키워드 / '${watch.location || '전체'}' 지역의 신규 매물이 올라왔습니다.`,
+    `${site}에 '${watch.keyword}' 키워드 / '${watch.location || '전체'}' 지역의 신규 매물이 올라왔습니다.`,
     '',
   ];
   items.forEach((it, i) => {
     lines.push(`${i + 1}. ${it.title || '(제목 없음)'}`);
     if (it.price) lines.push(`   가격: ${it.price}`);
     if (it.region) lines.push(`   지역: ${it.region}`);
-    lines.push(`   매물: ${it.url}`);
-    lines.push(`   빠른 채팅: ${chatHelperLink(it, message)}`);
+    lines.push(`   ${site} 매물: ${it.url}`);
+    lines.push(`   빠른 채팅: ${chatHelperLink(it, message, theme.key)}`);
     lines.push('');
   });
   lines.push(`인사말: "${message}"`);
@@ -81,8 +84,9 @@ function esc(s) {
   }[c]));
 }
 
-function buildHtml(watch, items, message, site) {
-  const siteName = site || '당근마켓';
+function buildHtml(watch, items, message, site, theme) {
+  const t = theme || themeFor(null);
+  const siteName = site || t.name;
   const cards = items
     .map(
       (it) => `
@@ -93,17 +97,17 @@ function buildHtml(watch, items, message, site) {
             ? `<img src="${esc(it.image)}" alt="" width="96" height="96" style="border-radius:8px;object-fit:cover;float:left;margin-right:12px;">`
             : ''
         }
-        <a href="${esc(it.url)}" style="font-size:16px;font-weight:700;color:#ff6f0f;text-decoration:none;">
+        <a href="${esc(it.url)}" style="font-size:16px;font-weight:700;color:${t.dark};text-decoration:none;">
           ${esc(it.title || '(제목 없음)')}
         </a>
         <div style="margin-top:4px;color:#333;font-size:15px;">${esc(it.price || '')}</div>
         <div style="margin-top:2px;color:#888;font-size:13px;">${esc(it.region || '')}</div>
         <div style="margin-top:10px;">
-          <a href="${esc(chatHelperLink(it, message))}" style="display:inline-block;background:#ff6f0f;color:#fff;padding:9px 15px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;margin-right:6px;">
+          <a href="${esc(chatHelperLink(it, message, t.key))}" style="display:inline-block;background:${t.primary};color:#fff;padding:9px 15px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;margin-right:6px;">
             💬 빠른 채팅
           </a>
-          <a href="${esc(it.url)}" style="display:inline-block;background:#fff;color:#e5620a;border:1.5px solid #ff6f0f;padding:7px 14px;border-radius:6px;font-size:13px;text-decoration:none;">
-            매물 보기 →
+          <a href="${esc(it.url)}" style="display:inline-block;background:#fff;color:${t.dark};border:1.5px solid ${t.primary};padding:7px 14px;border-radius:6px;font-size:13px;text-decoration:none;">
+            ${esc(siteName)}에서 보기 →
           </a>
         </div>
         <div style="clear:both;"></div>
@@ -116,25 +120,29 @@ function buildHtml(watch, items, message, site) {
 <html lang="ko">
 <body style="margin:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:20px;">
-    <div style="background:#fff;border-radius:12px;padding:24px;">
-      <h1 style="margin:0 0 4px;font-size:20px;color:#ff6f0f;">🛒 ${esc(siteName)} 신규 매물 알림</h1>
+    <div style="background:#fff;border-radius:12px;padding:0;overflow:hidden;border:1px solid #eee;">
+      <div style="background:linear-gradient(135deg,${t.primary},${t.lite});padding:20px 24px;">
+        <h1 style="margin:0;font-size:20px;color:#fff;">${t.emoji} ${esc(siteName)} 신규 매물 알림</h1>
+      </div>
+      <div style="padding:24px;">
       <p style="margin:0 0 16px;color:#555;font-size:14px;">
-        <b>${esc(siteName)}</b> · 키워드 <b>'${esc(watch.keyword)}'</b> · 지역 <b>'${esc(watch.location || '전체')}'</b> 조건의 신규 매물 <b>${items.length}</b>건
+        <b style="color:${t.dark};">${esc(siteName)}</b> · 키워드 <b>'${esc(watch.keyword)}'</b> · 지역 <b>'${esc(watch.location || '전체')}'</b> 조건의 신규 매물 <b>${items.length}</b>건
       </p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${cards}</table>
-      <div style="margin:18px 0 0;padding:12px 14px;background:#fff4ec;border-radius:8px;">
-        <div style="font-size:12px;color:#e5620a;font-weight:700;margin-bottom:4px;">미리 준비된 인사말</div>
+      <div style="margin:18px 0 0;padding:12px 14px;background:${t.soft};border-radius:8px;">
+        <div style="font-size:12px;color:${t.dark};font-weight:700;margin-bottom:4px;">미리 준비된 인사말</div>
         <div style="font-size:15px;color:#333;">${esc(message)}</div>
       </div>
       <p style="margin:14px 0 0;color:#999;font-size:12px;">
-        <b>💬 빠른 채팅</b> 버튼 → 인사말 <b>복사</b> → <b>매물에서 "채팅하기"</b>에 붙여넣기 후 전송하세요.<br>
+        <b>💬 빠른 채팅</b> 버튼 → 인사말 <b>복사</b> → <b>${esc(siteName)}에서 "채팅하기"</b>에 붙여넣기 후 전송하세요.<br>
         (계정 보호 및 각 사이트 이용약관 준수를 위해 전송은 직접 완료합니다.)<br>
         이 메일은 GitHub Actions 자동 알림으로 발송되었습니다.
       </p>
+      </div>
     </div>
   </div>
 </body>
 </html>`;
 }
 
-module.exports = { sendNewItemsEmail };
+module.exports = { sendNewItemsEmail, buildHtml, buildText };
