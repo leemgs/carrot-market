@@ -5,11 +5,11 @@
  * 이메일/이슈/채팅 도우미에서 사이트별 색상·이모지·표기·매물 링크 문구를 일치시킨다.
  *
  * 브랜드 색상:
- *   - 당근마켓  : 오렌지 (#ff6f0f)   — 당근 로고 색
- *   - 중고나라  : 그린   (#0ba85c)   — 중고나라 로고 색
- *   - 번개장터  : 블랙   (#1a1a1a)   — 2023 리뉴얼 로고가 블랙 (이전 레드)
+ *   - 당근마켓  : 오렌지 (#ff6f0f)
+ *   - 중고나라  : 그린   (#0ba85c)
+ *   - 번개장터  : 파랑   (#2563eb)
  *
- * chat.js(브라우저)에도 동일한 맵이 있으니 색상을 바꿀 때 함께 수정할 것.
+ * docs/assets/theme.js(브라우저)에도 동일한 맵이 있으니 색상을 바꿀 때 함께 수정할 것.
  */
 
 const SITE_THEME = {
@@ -37,10 +37,10 @@ const SITE_THEME = {
     key: 'bunjang',
     name: '번개장터',
     emoji: '⚡',
-    primary: '#1a1a1a',
-    dark: '#000000',
-    lite: '#4a4a4a',
-    soft: '#f2f2f2',
+    primary: '#2563eb',
+    dark: '#1d4ed8',
+    lite: '#60a5fa',
+    soft: '#eef4ff',
     host: 'www.bunjang.com',
   },
 };

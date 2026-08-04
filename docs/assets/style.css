@@ -2,6 +2,7 @@
   --carrot: #ff6f0f;
   --carrot-dark: #e5620a;
   --carrot-lite: #ff9a3d;
+  --soft: #fff4ec;
   --ink: #1f1f1f;
   --muted: #6b7280;
   --bg: #f6f7f9;
@@ -80,7 +81,7 @@ button.secondary, .button-link.secondary {
   color: var(--carrot-dark);
   border: 1.5px solid var(--carrot);
 }
-button.secondary:hover, .button-link.secondary:hover { background: #fff4ec; }
+button.secondary:hover, .button-link.secondary:hover { background: var(--soft); }
 
 .button-link { margin-top: 6px; }
 
@@ -110,7 +111,7 @@ code { font-family: "SFMono-Regular", Menlo, Consolas, monospace; }
 .secrets li { margin-bottom: 4px; }
 
 .chat-msg {
-  background: #fff4ec;
+  background: var(--soft);
   border: 1.5px dashed var(--carrot);
   border-radius: 10px;
   padding: 16px;
@@ -153,7 +154,7 @@ button.mini {
   padding: 6px 10px; font-size: 12px; border-radius: 6px; margin-left: 4px;
   background: #fff; color: var(--carrot-dark); border: 1.5px solid var(--carrot);
 }
-button.mini:hover { background: #fff4ec; }
+button.mini:hover { background: var(--soft); }
 button.mini.danger { color: #d23f31; border-color: #f0b6b0; }
 button.mini.danger:hover { background: #fdeceb; }
 
@@ -193,7 +194,7 @@ footer a { color: var(--carrot-dark); }
   padding: 8px 12px; border-radius: 9px;
   color: var(--ink); text-decoration: none; font-weight: 600; font-size: 14px;
 }
-.nav-link:hover { background: #fff4ec; color: var(--carrot-dark); }
+.nav-link:hover { background: var(--soft); color: var(--carrot-dark); }
 .nav-link.active { background: var(--carrot); color: #fff; }
 .nav-link.active:hover { background: var(--carrot-dark); color: #fff; }
 .nav-ext { color: var(--muted); font-weight: 500; }
@@ -233,7 +234,7 @@ footer a { color: var(--carrot-dark); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
-  background: #fff4ec; color: var(--carrot-dark);
+  background: var(--soft); color: var(--carrot-dark);
   border: 1px solid #ffd9bd; border-radius: 999px;
   padding: 6px 12px; font-size: 13px; font-weight: 600;
 }
@@ -248,7 +249,7 @@ footer a { color: var(--carrot-dark); }
   border-radius: 12px; padding: 14px 16px; text-decoration: none; color: inherit;
   transition: border-color .12s, box-shadow .12s;
 }
-.issue-item:hover { border-color: var(--carrot); box-shadow: 0 2px 10px rgba(255,111,15,0.10); }
+.issue-item:hover { border-color: var(--carrot); box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
 .issue-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .issue-title { font-weight: 700; font-size: 15px; color: var(--ink); }
 .issue-meta { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 6px; }
@@ -259,7 +260,7 @@ footer a { color: var(--carrot-dark); }
 }
 .badge.open { background: #e7f6ec; color: #128a3c; }
 .badge.closed { background: #f0eef7; color: #7c5cbf; }
-.badge.count { background: #fff4ec; color: var(--carrot-dark); }
+.badge.count { background: var(--soft); color: var(--carrot-dark); }
 
 /* ---- 필터 바 ---- */
 .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
@@ -320,11 +321,12 @@ footer a { color: var(--carrot-dark); }
 .badge.site { background: #eef2ff; color: #3730a3; }
 .badge.site.site-daangn { background: #fff1e6; color: #c2410c; }
 .badge.site.site-joongna { background: #e7f6ec; color: #15803d; }
-.badge.site.site-bunjang { background: #ffe9ea; color: #dc2626; }
+.badge.site.site-bunjang { background: #eef4ff; color: #1d4ed8; }
 .site-chip {
   background: #fff1e6; color: #c2410c; border-color: #ffd9bd;
   margin: 2px 4px 2px 0; padding: 3px 9px; font-size: 12px;
 }
 .site-chip.site-joongna { background: #e7f6ec; color: #15803d; border-color: #bfe6cd; }
-.site-chip.site-bunjang { background: #ffe9ea; color: #dc2626; border-color: #f5c2c4; }
-.seg-site button.on { background: #4f46e5; }
+.site-chip.site-bunjang { background: #eef4ff; color: #1d4ed8; border-color: #c3d4fb; }
+/* 활성 사이트 필터 칩은 현재 페이지 테마 색을 따른다 */
+.seg-site button.on { background: var(--carrot); color: #fff; }

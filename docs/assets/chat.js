@@ -1,11 +1,7 @@
 'use strict';
 
-// 사이트별 브랜드 테마 (scripts/theme.js 와 동일하게 유지할 것)
-const SITE_THEME = {
-  daangn: { name: '당근마켓', emoji: '🥕', primary: '#ff6f0f', dark: '#e5620a', lite: '#ff9a3d', soft: '#fff4ec' },
-  joongna: { name: '중고나라', emoji: '🟢', primary: '#0ba85c', dark: '#08834a', lite: '#2ed47f', soft: '#eafaf1' },
-  bunjang: { name: '번개장터', emoji: '⚡', primary: '#1a1a1a', dark: '#000000', lite: '#4a4a4a', soft: '#f2f2f2' },
-};
+// 사이트별 브랜드 테마는 theme.js(window.SITE_THEME)에서 공유한다.
+const SITE_THEME = window.SITE_THEME || {};
 
 // URL 파라미터: ?url=매물주소&msg=인사말&title=제목&site=사이트키
 const params = new URLSearchParams(location.search);
@@ -30,13 +26,11 @@ function inferSiteKey() {
   return 'daangn';
 }
 const siteKey = inferSiteKey();
-const theme = SITE_THEME[siteKey] || SITE_THEME.daangn;
 
-// 페이지 전체를 사이트 테마 색상으로 재도색 (CSS 변수 오버라이드)
-const rootStyle = document.documentElement.style;
-rootStyle.setProperty('--carrot', theme.primary);
-rootStyle.setProperty('--carrot-dark', theme.dark);
-rootStyle.setProperty('--carrot-lite', theme.lite);
+// 페이지 전체를 사이트 테마 색상으로 재도색 (theme.js 의 공용 적용 함수 사용)
+const theme = window.applySiteTheme
+  ? window.applySiteTheme(siteKey)
+  : SITE_THEME[siteKey] || SITE_THEME.daangn;
 
 const msgEl = document.getElementById('chat-msg');
 const titleEl = document.getElementById('item-title');
