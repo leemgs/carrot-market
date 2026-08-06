@@ -55,7 +55,7 @@ form.addEventListener('submit', (e) => {
 
   // 희망 금액(이하): 숫자만 추출
   const maxDigits = document.getElementById('maxprice').value.replace(/[^\d]/g, '');
-  const maxPrice = maxDigits ? parseInt(maxDigits, 10) : 0;
+  const maxPrice = maxDigits ? parseInt(maxDigits, 10) : undefined;
 
   // 검색할 사이트 (당근/중고나라)
   const sites = Array.from(document.querySelectorAll('input[name="site"]:checked')).map(
@@ -69,7 +69,7 @@ form.addEventListener('submit', (e) => {
     email,
     enabled: true,
   };
-  if (maxPrice > 0) watch.maxPrice = maxPrice;
+  if (maxPrice !== undefined) watch.maxPrice = maxPrice;
   if (sites.length) watch.sites = sites; // 선택한 사이트 명시 (미선택 시 생략 → 기본 전체)
 
   snippetEl.textContent = JSON.stringify(watch, null, 2);

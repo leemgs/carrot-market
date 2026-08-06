@@ -101,8 +101,13 @@ async function main() {
       continue;
     }
 
-    const priceNote =
-      Number(watch.maxPrice) > 0 ? ` 희망가='≤${Number(watch.maxPrice).toLocaleString('ko-KR')}원'` : '';
+    const hasMaxPrice =
+      Object.prototype.hasOwnProperty.call(watch, 'maxPrice') && watch.maxPrice !== '' && watch.maxPrice != null;
+    const priceNote = hasMaxPrice
+      ? Number(watch.maxPrice) === 0
+        ? ` 희망가='무료(당근 나눔, 중고나라·번개장터 0원)'`
+        : ` 희망가='≤${Number(watch.maxPrice).toLocaleString('ko-KR')}원'`
+      : '';
     const sites = watchSites(watch);
 
     // 감시 항목마다 지정된 사이트(당근/중고나라 등)를 각각 검색한다.

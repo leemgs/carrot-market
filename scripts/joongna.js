@@ -176,7 +176,8 @@ function normalizeItems(rawItems) {
   return rawItems.map((it) => ({
     id: it.id,
     title: it.title || '',
-    price: formatPrice(it.price),
+    // 중고나라의 무료 매물은 사이트 표기에 맞춰 "0원"으로 유지한다.
+    price: formatPrice(it.price, '0원'),
     priceValue: parsePriceValue(it.price),
     region: it.region || '',
     url: it.url,

@@ -79,12 +79,13 @@ function parseMaxPrice(value) {
   const digits = String(value).replace(/[^\d]/g, '');
   if (!digits) return undefined;
   const n = parseInt(digits, 10);
-  return Number.isFinite(n) && n > 0 ? n : undefined;
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
-// 표시용: 100000 → "100,000원 이하", 없으면 "-"
+// 표시용: 100000 → "100,000원 이하", 0 → "무료만", 없으면 "-"
 function formatMaxPrice(value) {
   const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? n.toLocaleString('ko-KR') + '원 이하' : '';
+  if (!Number.isFinite(n) || n < 0) return '';
+  return n === 0 ? '무료만 (나눔/0원)' : n.toLocaleString('ko-KR') + '원 이하';
 }
 
 // ------- 초기화: 저장된 값 복원 -------
@@ -204,7 +205,7 @@ function render() {
       <td><b>${esc(w.keyword)}</b></td>
       <td>${watchSitesOf(w).map((k) => `<span class="chip site-chip site-${k}">${esc(SITE_META[k])}</span>`).join('')}</td>
       <td>${esc(w.location)}</td>
-      <td class="muted-cell">${w.maxPrice ? esc(formatMaxPrice(w.maxPrice)) : '-'}</td>
+      <td class="muted-cell">${w.maxPrice !== undefined ? esc(formatMaxPrice(w.maxPrice)) : '-'}</td>
       <td class="email-cell">${emailCell}</td>
       <td class="muted-cell">${esc(w.chatMessage || '(기본값)')}</td>
       <td class="actions">
@@ -283,7 +284,7 @@ function openEdit(index) {
     el.checked = sel.includes(el.value);
   });
   regionPicker.setValue(w.location || '');
-  $('f-maxprice').value = w.maxPrice ? Number(w.maxPrice).toLocaleString('ko-KR') : '';
+  $('f-maxprice').value = w.maxPrice !== undefined ? Number(w.maxPrice).toLocaleString('ko-KR') : '';
   $('f-email').value = formatEmails(w.email);
   $('f-msg').value = w.chatMessage || '';
   $('f-enabled').checked = w.enabled !== false;

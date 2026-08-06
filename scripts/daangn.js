@@ -277,10 +277,16 @@ function keywordMatches(title, keyword) {
   return tokens.every((tok) => t.includes(tok));
 }
 
-// 희망 금액(이하) 필터. maxPrice 미설정이면 통과, 가격 불명 매물도 통과(놓치지 않도록).
+// 희망 금액(이하) 필터.
+// - maxPrice 미설정: 금액 제한 없음
+// - maxPrice 0: 무료 매물(priceValue === 0)만 통과
+// - maxPrice 양수: 해당 금액 이하. 가격 불명 매물도 놓치지 않도록 통과
 function priceWithinMax(item, watch) {
+  const hasMaxPrice = Object.prototype.hasOwnProperty.call(watch, 'maxPrice');
+  if (!hasMaxPrice || watch.maxPrice === '' || watch.maxPrice == null) return true;
   const maxP = Number(watch.maxPrice);
-  if (!Number.isFinite(maxP) || maxP <= 0) return true; // 미설정
+  if (!Number.isFinite(maxP) || maxP < 0) return true; // 잘못된 설정은 제한 없음으로 처리
+  if (maxP === 0) return item.priceValue === 0;
   if (!Number.isFinite(item.priceValue)) return true; // 가격 불명 → 통과
   return item.priceValue <= maxP;
 }

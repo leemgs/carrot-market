@@ -42,7 +42,12 @@
         const loc = w.location ? ` · ${esc(w.location)}` : ' · 전국';
         const sites = Array.isArray(w.sites) && w.sites.length ? w.sites : ['daangn', 'joongna', 'bunjang'];
         const siteTag = ' · ' + sites.map((k) => esc(siteNames[k] || k)).join('+');
-        const price = Number(w.maxPrice) > 0 ? ` · ≤${Number(w.maxPrice).toLocaleString('ko-KR')}원` : '';
+        const hasMaxPrice = w.maxPrice !== undefined && w.maxPrice !== null && w.maxPrice !== '';
+        const price = hasMaxPrice
+          ? Number(w.maxPrice) === 0
+            ? ' · 무료만(나눔/0원)'
+            : ` · ≤${Number(w.maxPrice).toLocaleString('ko-KR')}원`
+          : '';
         return `<span class="chip${off ? ' off' : ''}"><span class="dot"></span>${esc(w.keyword)}<span style="opacity:.7">${loc}${siteTag}${price}</span></span>`;
       })
       .join('');

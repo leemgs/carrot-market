@@ -6,9 +6,9 @@
 
 // 가격 값을 "16,000원" 형태로 정규화한다.
 //  - "16000.0", "16000.0 KRW", "16,000원" → "16,000원"
-//  - 0 → "나눔"
+//  - 0 → 기본 "나눔" (사이트에 따라 "0원" 표시 가능)
 //  - "나눔", "가격 제안" 등 숫자가 아닌 표기는 소수 꼬리만 정리해 그대로 둔다.
-function formatPrice(raw) {
+function formatPrice(raw, zeroLabel = '나눔') {
   if (raw == null) return '';
   let s = String(raw).trim();
   if (!s) return '';
@@ -17,7 +17,7 @@ function formatPrice(raw) {
   if (/^[\d,]+(?:\.\d+)?\s*원?$/.test(s)) {
     const n = Math.round(parseFloat(s.replace(/[,원\s]/g, '')));
     if (!Number.isFinite(n)) return s;
-    if (n === 0) return '나눔';
+    if (n === 0) return zeroLabel;
     return n.toLocaleString('ko-KR') + '원';
   }
   // 텍스트가 섞인 경우: "16000.0" 같은 소수 꼬리만 정리

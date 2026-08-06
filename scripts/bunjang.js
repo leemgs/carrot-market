@@ -80,7 +80,8 @@ function normalizeItems(list) {
       return {
         id: String(p.pid),
         title: p.name || p.title || '',
-        price: formatPrice(priceRaw),
+        // 번개장터의 무료 매물은 사이트 표기에 맞춰 "0원"으로 유지한다.
+        price: formatPrice(priceRaw, '0원'),
         priceValue: parsePriceValue(priceRaw),
         region: toRegion(p.location || p.location_name || p.region || ''),
         url: `${PRODUCT_BASE}/${p.pid}`,
