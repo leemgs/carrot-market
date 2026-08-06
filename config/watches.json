@@ -37,6 +37,7 @@
       "id": "테이블-경기도",
       "keyword": "테이블",
       "location": "경기도",
+      "maxPrice": 0,
       "email": "leemgs@gmail.com",
       "enabled": true
     }
