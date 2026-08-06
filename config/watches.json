@@ -40,6 +40,14 @@
       "maxPrice": 0,
       "email": "leemgs@gmail.com",
       "enabled": true
+    },
+    {
+      "id": "나눔-수원시영통구",
+      "keyword": "나눔",
+      "location": "수원시영통구",
+      "maxPrice": 0,
+      "email": "leemgs@gmail.com",
+      "enabled": true
     }
   ]
 }
