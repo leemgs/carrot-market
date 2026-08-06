@@ -53,9 +53,13 @@ form.addEventListener('submit', (e) => {
   // 여러 개면 배열로, 1개면 문자열로 저장
   const email = emails.length > 1 ? emails : emails[0] || '';
 
-  // 희망 금액(이하): 숫자만 추출
+  // 무료나눔 체크 시 희망 금액을 0원으로 저장한다.
   const maxDigits = document.getElementById('maxprice').value.replace(/[^\d]/g, '');
-  const maxPrice = maxDigits ? parseInt(maxDigits, 10) : undefined;
+  const maxPrice = document.getElementById('free-share').checked
+    ? 0
+    : maxDigits
+      ? parseInt(maxDigits, 10)
+      : undefined;
 
   // 검색할 사이트 (당근/중고나라)
   const sites = Array.from(document.querySelectorAll('input[name="site"]:checked')).map(
@@ -94,9 +98,17 @@ copyBtn.addEventListener('click', async () => {
 
 // 희망 금액 입력 시 천단위 콤마 자동 표시
 const maxPriceInput = document.getElementById('maxprice');
-if (maxPriceInput) {
+const freeShareInput = document.getElementById('free-share');
+if (maxPriceInput && freeShareInput) {
+  freeShareInput.addEventListener('change', () => {
+    if (freeShareInput.checked) maxPriceInput.value = '0';
+    else if (maxPriceInput.value === '0') maxPriceInput.value = '';
+    maxPriceInput.disabled = freeShareInput.checked;
+  });
   maxPriceInput.addEventListener('input', () => {
     const d = maxPriceInput.value.replace(/[^\d]/g, '');
     maxPriceInput.value = d ? parseInt(d, 10).toLocaleString('ko-KR') : '';
+    freeShareInput.checked = d === '0';
+    maxPriceInput.disabled = freeShareInput.checked;
   });
 }

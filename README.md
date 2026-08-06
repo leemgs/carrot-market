@@ -243,6 +243,8 @@ flowchart TD
 | `chatMessage` | 채팅 도우미에 미리 채울 인사말 (없으면 `defaultChatMessage`) |
 | `enabled` | `false` 면 검사 제외 |
 
+> 간편 등록·감시 목록 관리에서 **무료나눔** 메뉴를 체크하면 희망 금액이 자동으로 `0원`으로 입력되어 무료 매물만 알립니다.
+
 최상위 옵션: `sendEmail`(기본 true) · `createIssues`(기본 true) 로
 이메일/이슈 알림을 각각 켜고 끌 수 있습니다.
 

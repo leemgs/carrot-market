@@ -135,6 +135,9 @@ code { font-family: "SFMono-Regular", Menlo, Consolas, monospace; }
 .help summary { cursor: pointer; font-weight: 600; color: var(--carrot-dark); font-size: 14px; }
 label.check { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; }
 label.check input { width: auto; }
+label.free-share-check { flex-wrap: wrap; font-weight: 700; }
+label.free-share-check .hint { flex-basis: 100%; margin-left: 25px; }
+input:disabled { cursor: not-allowed; background: #f1f5f9; color: #64748b; }
 .req { color: #d23f31; }
 
 .list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }

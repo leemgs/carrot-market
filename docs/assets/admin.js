@@ -285,6 +285,8 @@ function openEdit(index) {
   });
   regionPicker.setValue(w.location || '');
   $('f-maxprice').value = w.maxPrice !== undefined ? Number(w.maxPrice).toLocaleString('ko-KR') : '';
+  $('f-free-share').checked = Number(w.maxPrice) === 0 && w.maxPrice !== undefined;
+  $('f-maxprice').disabled = $('f-free-share').checked;
   $('f-email').value = formatEmails(w.email);
   $('f-msg').value = w.chatMessage || '';
   $('f-enabled').checked = w.enabled !== false;
@@ -298,6 +300,14 @@ $('edit-cancel').addEventListener('click', () => $('edit-card').classList.add('h
 $('f-maxprice').addEventListener('input', (e) => {
   const n = parseMaxPrice(e.target.value);
   e.target.value = n ? n.toLocaleString('ko-KR') : e.target.value.replace(/[^\d]/g, '');
+  $('f-free-share').checked = e.target.value === '0';
+  e.target.disabled = $('f-free-share').checked;
+});
+
+$('f-free-share').addEventListener('change', (e) => {
+  if (e.target.checked) $('f-maxprice').value = '0';
+  else if ($('f-maxprice').value === '0') $('f-maxprice').value = '';
+  $('f-maxprice').disabled = e.target.checked;
 });
 
 $('edit-form').addEventListener('submit', (e) => {
@@ -314,7 +324,7 @@ $('edit-form').addEventListener('submit', (e) => {
       // 전체(또는 미선택)면 생략 → 기본 전체. 일부만 선택 시 명시.
       return chosen.length && chosen.length < ALL_SITES.length ? chosen : undefined;
     })(),
-    maxPrice: parseMaxPrice($('f-maxprice').value),
+    maxPrice: $('f-free-share').checked ? 0 : parseMaxPrice($('f-maxprice').value),
     email: emailsToStore($('f-email').value),
     chatMessage: $('f-msg').value.trim() || undefined,
     enabled: $('f-enabled').checked,
