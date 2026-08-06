@@ -45,7 +45,7 @@
         const hasMaxPrice = w.maxPrice !== undefined && w.maxPrice !== null && w.maxPrice !== '';
         const price = hasMaxPrice
           ? Number(w.maxPrice) === 0
-            ? ' · 무료만(나눔/0원)'
+            ? ' · 0원(무료나눔)'
             : ` · ≤${Number(w.maxPrice).toLocaleString('ko-KR')}원`
           : '';
         return `<span class="chip${off ? ' off' : ''}"><span class="dot"></span>${esc(w.keyword)}<span style="opacity:.7">${loc}${siteTag}${price}</span></span>`;
