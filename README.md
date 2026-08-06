@@ -7,6 +7,9 @@
 > 예시) 제품 `가마솥`, 지역 `수원시`, 희망가 `100,000원` 을 등록 → 판매 위치가 수원이면서 제목에
 > "가마솥"이 포함되고 가격이 10만원 이하인 새 매물이 당근마켓/중고나라/번개장터에 올라오면, 지정한 이메일로
 > 매물 정보와 구매 링크가 도착합니다. 감시 항목마다 검색할 사이트를 선택할 수 있습니다.
+>
+> **무료 매물만 찾을 때:** 간편 등록 또는 감시 목록 관리에서 **🎁 무료나눔**을 체크하세요.
+> 희망 금액이 자동으로 `0원`이 되고, 당근의 **나눔** 및 중고나라·번개장터의 **0원** 매물만 알립니다.
 
 ---
 
@@ -26,7 +29,7 @@ flowchart LR
     subgraph PIPE["🐍 check_daangn.js (Node)"]
         direction LR
         FT["📡 sources.js<br/>당근·중고나라·번개장터<br/><b>검색·파싱</b>"]
-        FL["🔎 필터<br/><b>키워드+지역+희망가</b>"]
+        FL["🔎 필터<br/><b>키워드+지역+희망가/무료나눔</b>"]
         DF["🆕 신규 선별<br/><b>seen 비교</b>"]
         FT --> FL --> DF
     end
@@ -67,7 +70,7 @@ flowchart LR
 | ✉️ **이메일** | [`scripts/mailer.js`](scripts/mailer.js) | Gmail SMTP로 사이트 테마 색상의 매물·구매 링크·빠른 채팅 버튼 발송 |
 | 🐙 **이슈** | [`scripts/github.js`](scripts/github.js) | 신규 매물을 사이트별 라벨(`당근마켓-알림`·`중고나라-알림`·`번개장터-알림`) 이슈로 등록 |
 | 🎨 **테마** | [`scripts/theme.js`](scripts/theme.js) · [`docs/assets/theme.js`](docs/assets/theme.js) | 사이트별 브랜드 색상(당근 주황·중고나라 녹색·번개장터 파랑)을 이메일·웹에 일관 적용 |
-| 🌐 **웹 UI** | [`docs/`](docs) | 대시보드·사이트별 매물 알림·감시목록 관리·간편등록·빠른 채팅 (GitHub Pages) |
+| 🌐 **웹 UI** | [`docs/`](docs) | 대시보드·사이트별 매물 알림·감시목록 관리·간편등록·무료나눔 등록·빠른 채팅 (GitHub Pages) |
 | ⏰ **자동화** | [`daangn-alert.yml`](.github/workflows/daangn-alert.yml) | 실행되면 job 내부에서 ~3분마다 반복 점검·알림·상태 커밋 |
 
 ---
@@ -106,7 +109,7 @@ sequenceDiagram
 ```
 
 1. **검색** — `check_daangn.js`가 감시 항목마다 지정된 사이트(당근마켓·중고나라·번개장터)를 각각 검색·파싱합니다.
-2. **필터** — 제목에 키워드가 있고 지역이 일치하며(미입력 시 전국) 희망가 이하인 매물만 남깁니다.
+2. **필터** — 제목에 키워드가 있고 지역이 일치하며(미입력 시 전국), 양수 희망가는 해당 금액 이하, `0원`은 무료 매물만 남깁니다.
 3. **선별** — (감시 항목 × 사이트)별로 `state/seen.json`과 비교해 아직 알리지 않은 신규 매물만 고릅니다.
 4. **알림** — 이메일과 GitHub 이슈로 각각 발송(하나라도 성공하면 상태 갱신).
 5. **기록** — `seen.json`을 갱신·커밋해 다음 실행 때 중복 알림을 막습니다.
@@ -161,10 +164,10 @@ flowchart TD
 
 | 경로 | 설명 |
 | --- | --- |
-| `docs/index.html` | 대시보드(GitHub Pages). 감시 항목·최근 알림을 한눈에 (**회색 테마**) |
+| `docs/index.html` | 대시보드(GitHub Pages). 감시 항목·최근 알림을 한눈에 표시하고 무료 감시는 **`0원(무료나눔)`**로 표시 (**회색 테마**) |
 | `docs/issues.html` | 사이트별 매물 알림 목록. `?site=daangn\|joongna\|bunjang` 에 따라 **주황/녹색/파랑** 테마 |
-| `docs/admin.html` | 감시 목록 관리. GitHub API로 조회·추가·수정·삭제하고 커밋 |
-| `docs/add.html` | 간편 등록. 지역 드롭다운으로 감시 항목 설정 코드 생성 |
+| `docs/admin.html` | 감시 목록 관리. GitHub API로 조회·추가·수정·삭제하고, **무료나눔** 선택을 포함해 커밋 |
+| `docs/add.html` | 간편 등록. 지역 드롭다운·**무료나눔** 메뉴로 감시 항목 설정 코드 생성 |
 | `docs/help.html` | 도움말 |
 | `docs/chat.html` | 빠른 채팅 도우미. 이메일/이슈에서 열려 인사말 복사 + 해당 사이트 매물 채팅 화면으로 이동 |
 | `docs/assets/` | 공용 네비게이션(`nav.js`)·테마(`theme.js`)·GitHub 데이터(`gh-data.js`)·페이지 스크립트·스타일 |
@@ -228,6 +231,15 @@ flowchart TD
       "location": "수원시",
       "email": "myname@gmail.com",
       "enabled": true
+    },
+    {
+      "id": "free-chair-all",
+      "keyword": "의자",
+      "location": "",
+      "maxPrice": 0,
+      "sites": ["daangn", "joongna", "bunjang"],
+      "email": "myname@gmail.com",
+      "enabled": true
     }
   ]
 }
@@ -243,7 +255,18 @@ flowchart TD
 | `chatMessage` | 채팅 도우미에 미리 채울 인사말 (없으면 `defaultChatMessage`) |
 | `enabled` | `false` 면 검사 제외 |
 
-> 간편 등록·감시 목록 관리에서 **무료나눔** 메뉴를 체크하면 희망 금액이 자동으로 `0원`으로 입력되어 무료 매물만 알립니다.
+### 🎁 무료나눔 감시
+
+| 구분 | 동작 |
+| --- | --- |
+| UI 등록 | 간편 등록·감시 목록 관리에서 **무료나눔**을 체크하면 금액 입력란이 `0`으로 바뀌고 비활성화됩니다. |
+| 저장 값 | 감시 항목에 `"maxPrice": 0`으로 저장됩니다. 체크를 풀면 0원이 지워지고 일반 희망 금액을 다시 입력할 수 있습니다. |
+| 필터 | 가격을 알 수 없는 매물이나 1원 이상 매물은 제외하고, 가격 값이 정확히 `0`인 매물만 통과시킵니다. |
+| 사이트별 표기 | 당근마켓은 **나눔**, 중고나라·번개장터는 **0원**으로 알림에 표시됩니다. |
+| 대시보드 | **감시 중인 키워드** 항목에 `0원(무료나눔)`로 표시됩니다. |
+
+> 파일을 직접 수정할 때도 `maxPrice`를 `0`으로 설정하면 동일하게 작동합니다. `maxPrice`를
+> 생략하는 것은 **금액 제한 없음**이므로 `0`과 다릅니다.
 
 최상위 옵션: `sendEmail`(기본 true) · `createIssues`(기본 true) 로
 이메일/이슈 알림을 각각 켜고 끌 수 있습니다.
@@ -297,6 +320,9 @@ npm install
 
 # 이메일을 보내지 않고 검색 결과만 확인 (DRY_RUN)
 DRY_RUN=true node check_daangn.js
+
+# 무료나눔 필터·사이트별 0원 표기 포함 자동 테스트
+npm test
 
 # 실제 발송 테스트
 GMAIL_USER=me@gmail.com GMAIL_APP_PASSWORD=xxxx node check_daangn.js
