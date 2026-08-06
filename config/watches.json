@@ -32,6 +32,13 @@
         "lsy0314@gmail.com"
       ],
       "enabled": true
+    },
+    {
+      "id": "테이블-경기도",
+      "keyword": "테이블",
+      "location": "경기도",
+      "email": "leemgs@gmail.com",
+      "enabled": true
     }
   ]
 }
