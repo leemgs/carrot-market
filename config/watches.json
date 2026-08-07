@@ -9,10 +9,10 @@
       "id": "롱샴-경기도",
       "keyword": "롱샴",
       "location": "경기도",
-      "maxPrice": 50000,
+      "maxPrice": 40000,
       "email": "leemgs@gmail.com",
       "chatMessage": "안녕하세요. 제가 구매 가능할까요?",
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "고추대-수원시영통구",
@@ -45,6 +45,9 @@
       "id": "나눔-수원시영통구",
       "keyword": "나눔",
       "location": "수원시영통구",
+      "sites": [
+        "daangn"
+      ],
       "maxPrice": 0,
       "email": "leemgs@gmail.com",
       "enabled": true
