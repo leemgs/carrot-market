@@ -192,8 +192,9 @@ function matchFieldNear(win, keys, center) {
   return v == null ? '' : v;
 }
 
-// 가격 필드: 문자열("price":"0")·숫자("price":0)·나눔 플래그를 모두 인식하고 url 앞 최근접을 고른다.
-// 나눔 매물은 자기 가격 텍스트가 없어, 이 규칙이 없으면 이웃의 "N원"을 잘못 집어온다.
+// 가격 필드: 문자열("price":"0")·숫자("price":0)·명시적 무료 플래그를 인식하고 url 앞 최근접을 고른다.
+// 나눔 매물은 당근이 "price":0 으로 내려주므로 자기 가격(0)이 최근접으로 잡힌다.
+// ⚠️ "나눔" 같은 제목 텍스트는 가격 신호로 쓰지 않는다(이웃 매물 제목이 창에 섞여 오탐).
 function matchPriceNear(win, center) {
   const matches = [];
   const re = /"(?:price|salePrice|sellPrice|priceValue)"\s*:\s*(?:"([^"]{1,20})"|(\d{1,12}))/gi;
@@ -201,11 +202,11 @@ function matchPriceNear(win, center) {
   while ((mm = re.exec(win)) !== null) {
     matches.push({ idx: mm.index, val: mm[1] != null ? mm[1] : mm[2] });
   }
+  // isFree/free/sharing:true 도 0원 신호로 취급하되, 위치를 기록해 "최근접"으로만 채택(이웃 오탐 방지).
+  const fre = /"(?:isFree|free|sharing)"\s*:\s*true/gi;
+  while ((mm = fre.exec(win)) !== null) matches.push({ idx: mm.index, val: '0' });
   const v = nearestValue(matches, center);
-  if (v != null) return v;
-  // 명시적 나눔/무료 플래그
-  if (/"(?:isFree|free|sharing)"\s*:\s*true/i.test(win) || /무료나눔|나눔/.test(win)) return '0';
-  return '';
+  return v == null ? '' : v;
 }
 
 // 카드 본문 텍스트에서 동네(…동/읍/면/가) 토큰을 추출. 태그/JSON 경계를 넘지 않도록
