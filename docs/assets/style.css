@@ -144,6 +144,22 @@ input:disabled { cursor: not-allowed; background: #f1f5f9; color: #64748b; }
 .list-head h2 { margin: 0; }
 #add-btn { padding: 8px 14px; font-size: 14px; }
 
+.list-tools { display: flex; align-items: end; gap: 12px; margin-top: 18px; }
+.list-tools label { margin: 0; }
+.watch-search { flex: 1; }
+.watch-search input { margin-top: 5px; }
+.page-size { width: 110px; flex: none; }
+.page-size select { margin-top: 5px; }
+
+.pagination { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: 18px; }
+.page-button {
+  min-width: 36px; padding: 7px 10px; border-radius: 7px; font-size: 13px;
+  color: var(--carrot-dark); background: #fff; border: 1px solid var(--border);
+}
+.page-button:hover:not(:disabled) { background: var(--soft); }
+.page-button.current { color: #fff; background: var(--carrot); border-color: var(--carrot); }
+.page-button:disabled { cursor: not-allowed; opacity: .45; }
+
 .table-scroll { overflow-x: auto; margin-top: 12px; }
 .watch-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .watch-table th, .watch-table td {
@@ -167,6 +183,8 @@ footer a { color: var(--carrot-dark); }
 @media (max-width: 480px) {
   .hero h1 { font-size: 23px; }
   .card { padding: 18px; }
+  .list-tools { align-items: stretch; flex-direction: column; }
+  .page-size { width: 100%; }
 }
 
 /* ============================================================

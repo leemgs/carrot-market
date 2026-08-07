@@ -32,6 +32,7 @@ function watchSitesOf(w) {
 // ------- 상태 -------
 let data = null; // watches.json 전체 객체
 let fileSha = null; // 커밋 시 필요한 현재 파일 sha
+let currentPage = 1;
 
 // ------- DOM -------
 const $ = (id) => document.getElementById(id);
@@ -41,6 +42,9 @@ const branchEl = $('branch');
 const connStatus = $('conn-status');
 const saveStatus = $('save-status');
 const tbody = $('watch-tbody');
+const searchEl = $('watch-search');
+const pageSizeEl = $('page-size');
+const paginationEl = $('watch-pagination');
 
 // 지역 선택 드롭다운(시/도 → 시/군/구)
 const regionPicker = createRegionPicker($('f-sido'), $('f-sigungu'), $('f-dong'));
@@ -179,6 +183,40 @@ function esc(s) {
   }[c]));
 }
 
+function searchableText(w) {
+  return [
+    w.keyword,
+    w.location,
+    formatMaxPrice(w.maxPrice),
+    formatEmails(w.email),
+    w.chatMessage,
+    ...watchSitesOf(w).map((key) => SITE_META[key]),
+  ].join(' ').toLocaleLowerCase('ko-KR');
+}
+
+function renderPagination(pageCount) {
+  paginationEl.innerHTML = '';
+  paginationEl.classList.toggle('hidden', pageCount <= 1);
+  if (pageCount <= 1) return;
+
+  const addButton = (label, page, disabled, current) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'page-button' + (current ? ' current' : '');
+    button.textContent = label;
+    button.disabled = disabled;
+    button.dataset.page = page;
+    if (current) button.setAttribute('aria-current', 'page');
+    paginationEl.appendChild(button);
+  };
+
+  addButton('‹ 이전', currentPage - 1, currentPage === 1, false);
+  for (let page = 1; page <= pageCount; page += 1) {
+    addButton(String(page), page, false, page === currentPage);
+  }
+  addButton('다음 ›', currentPage + 1, currentPage === pageCount, false);
+}
+
 function render() {
   $('defaults-card').classList.remove('hidden');
   $('list-card').classList.remove('hidden');
@@ -190,10 +228,18 @@ function render() {
   $('opt-issue').checked = data.createIssues !== false;
 
   const watches = data.watches;
+  const query = searchEl.value.trim().toLocaleLowerCase('ko-KR');
+  const filtered = watches
+    .map((watch, index) => ({ watch, index }))
+    .filter(({ watch }) => !query || searchableText(watch).includes(query));
+  const pageSize = Number(pageSizeEl.value) || 10;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  currentPage = Math.min(Math.max(currentPage, 1), pageCount);
+  const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   $('count').textContent = watches.length;
   tbody.innerHTML = '';
 
-  watches.forEach((w, i) => {
+  pageItems.forEach(({ watch: w, index: i }) => {
     const tr = document.createElement('tr');
     const emails = parseEmails(w.email);
     const emailCell = emails.length
@@ -216,7 +262,25 @@ function render() {
   });
 
   $('empty-note').classList.toggle('hidden', watches.length > 0);
+  $('no-results-note').classList.toggle('hidden', watches.length === 0 || filtered.length > 0);
+  renderPagination(pageCount);
 }
+
+searchEl.addEventListener('input', () => {
+  currentPage = 1;
+  render();
+});
+pageSizeEl.addEventListener('change', () => {
+  currentPage = 1;
+  render();
+});
+paginationEl.addEventListener('click', (e) => {
+  const page = Number(e.target.dataset.page);
+  if (!page || e.target.disabled) return;
+  currentPage = page;
+  render();
+  $('list-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 // ------- 이벤트: 연결/불러오기 -------
 $('conn-form').addEventListener('submit', async (e) => {
