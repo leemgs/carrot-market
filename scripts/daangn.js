@@ -82,7 +82,12 @@ function parseItems(html) {
     // 가격은 먼저 확보된(구조적으로 더 신뢰할 수 있는) 값을 보존한다.
     // 나중에 도는 광역 텍스트 스캔(extractFromText)이 이웃 매물의 가격을 덮어써
     // 나눔(0원) 매물에 엉뚱한 고가가 붙어 maxPrice 필터에 탈락하는 것을 막는다.
-    const rawPrice = existing.rawPrice || item.price || '';
+    const hasExistingPrice = existing.rawPrice != null && existing.rawPrice !== '';
+    const rawPrice = hasExistingPrice
+      ? existing.rawPrice
+      : item.price != null && item.price !== ''
+        ? item.price
+        : '';
     byId.set(id, {
       id,
       title: item.title || existing.title || '',
@@ -344,8 +349,14 @@ function priceWithinMax(item, watch) {
   return item.priceValue <= maxP;
 }
 
+function isGenericFreeKeyword(watch) {
+  if (Number(watch && watch.maxPrice) !== 0) return false;
+  return /^(?:나눔|무료나눔|무료)$/.test(normalize(watch && watch.keyword));
+}
+
 function matchesWatch(item, watch) {
-  if (!keywordMatches(item.title, watch.keyword)) return false;
+  // 무료 모드에서 이 세 단어는 제품명이 아니라 "모든 무료 매물" 검색으로 취급한다.
+  if (!isGenericFreeKeyword(watch) && !keywordMatches(item.title, watch.keyword)) return false;
   if (!priceWithinMax(item, watch)) return false;
 
   if (isNationwide(watch.location)) return true; // 지역 미입력 → 전국
@@ -486,7 +497,8 @@ function pickTitle(inner) {
 function pickPrice(inner) {
   const m =
     inner.match(/class="[^"]*price[^"]*"[^>]*>([\s\S]*?)</i) ||
-    inner.match(/([0-9][0-9,]{2,})\s*원/);
+    inner.match(/([0-9][0-9,]*)\s*원/) ||
+    inner.match(/(무료나눔|나눔|무료)/);
   return m ? stripTags(m[1]) : '';
 }
 function pickRegion(inner) {
