@@ -79,12 +79,16 @@ function parseItems(html) {
     if (!item || !item.id) return;
     const id = String(item.id);
     const existing = byId.get(id) || {};
-    const rawPrice = item.price || existing.price || '';
+    // 가격은 먼저 확보된(구조적으로 더 신뢰할 수 있는) 값을 보존한다.
+    // 나중에 도는 광역 텍스트 스캔(extractFromText)이 이웃 매물의 가격을 덮어써
+    // 나눔(0원) 매물에 엉뚱한 고가가 붙어 maxPrice 필터에 탈락하는 것을 막는다.
+    const rawPrice = existing.rawPrice || item.price || '';
     byId.set(id, {
       id,
       title: item.title || existing.title || '',
+      rawPrice,
       price: formatPrice(rawPrice),
-      priceValue: parsePriceValue(rawPrice), // 숫자 가격(원). 불명이면 null
+      priceValue: parsePriceValue(rawPrice), // 숫자 가격(원). 나눔=0, 불명=null
       region: item.region || existing.region || '',
       url: item.url || existing.url || `${BASE_URL}/kr/buy-sell/${id}/`,
       image: item.image || existing.image || '',
@@ -152,12 +156,55 @@ function deEscape(s) {
     .replace(/\\"/g, '"');
 }
 
-// 특정 키들 중 먼저 매칭되는 문자열 값을 반환
-function matchField(win, keys) {
-  for (const k of keys) {
-    const mm = win.match(new RegExp('"' + k + '"\\s*:\\s*"([^"]{1,120})"', 'i'));
-    if (mm) return mm[1];
+// 당근 매물 JSON 은 보통 {title, price, region, url} 순서라, 한 매물의 필드는 자기 url "앞"에 온다.
+// 따라서 url 위치(center) 기준으로 "바로 앞의 가장 가까운" 값을 고른다(없으면 뒤쪽 최근접).
+// 예전엔 창 안 첫 매칭(leftmost)을 써서 이웃 매물의 title/price 가 잘못 붙었다.
+function nearestValue(matches, center) {
+  let before = null;
+  let beforeIdx = -1;
+  let after = null;
+  let afterDist = Infinity;
+  for (const { idx, val } of matches) {
+    if (idx <= center) {
+      if (idx > beforeIdx) {
+        beforeIdx = idx;
+        before = val;
+      }
+    } else {
+      const d = idx - center;
+      if (d < afterDist) {
+        afterDist = d;
+        after = val;
+      }
+    }
   }
+  return before != null ? before : after;
+}
+
+function matchFieldNear(win, keys, center) {
+  const matches = [];
+  for (const k of keys) {
+    const re = new RegExp('"' + k + '"\\s*:\\s*"([^"]{1,120})"', 'ig');
+    let mm;
+    while ((mm = re.exec(win)) !== null) matches.push({ idx: mm.index, val: mm[1] });
+  }
+  const v = nearestValue(matches, center);
+  return v == null ? '' : v;
+}
+
+// 가격 필드: 문자열("price":"0")·숫자("price":0)·나눔 플래그를 모두 인식하고 url 앞 최근접을 고른다.
+// 나눔 매물은 자기 가격 텍스트가 없어, 이 규칙이 없으면 이웃의 "N원"을 잘못 집어온다.
+function matchPriceNear(win, center) {
+  const matches = [];
+  const re = /"(?:price|salePrice|sellPrice|priceValue)"\s*:\s*(?:"([^"]{1,20})"|(\d{1,12}))/gi;
+  let mm;
+  while ((mm = re.exec(win)) !== null) {
+    matches.push({ idx: mm.index, val: mm[1] != null ? mm[1] : mm[2] });
+  }
+  const v = nearestValue(matches, center);
+  if (v != null) return v;
+  // 명시적 나눔/무료 플래그
+  if (/"(?:isFree|free|sharing)"\s*:\s*true/i.test(win) || /무료나눔|나눔/.test(win)) return '0';
   return '';
 }
 
@@ -181,14 +228,19 @@ function extractFromText(text, add) {
     const start = Math.max(0, m.index - 500);
     const end = Math.min(text.length, m.index + 500);
     const win = text.slice(start, end);
-    const price =
-      matchField(win, ['price']) || (win.match(/([0-9][0-9,]{2,})\s*원/) || [])[1] || '';
-    // 지역: JSON 필드 우선, 없으면 링크 뒤쪽(카드 본문)에서 동네(…동/읍/면/가) 추출
-    let region = matchField(win, ['regionName', 'region', 'address', 'areaName', 'location']);
+    const center = m.index - start; // 창 안에서의 URL 위치
+    let price = matchPriceNear(win, center);
+    if (!price) {
+      // 폴백: 링크 직후 좁은 구간에서만 "N원" 을 찾는다(이웃 매물 가격 오염 방지).
+      const near = text.slice(m.index, m.index + 200);
+      price = (near.match(/([0-9][0-9,]{2,})\s*원/) || [])[1] || '';
+    }
+    // 지역: JSON 필드(URL 최근접) 우선, 없으면 링크 뒤쪽(카드 본문)에서 동네(…동/읍/면/가) 추출
+    let region = matchFieldNear(win, ['regionName', 'region', 'address', 'areaName', 'location'], center);
     if (!region) region = extractNeighborhood(text.slice(m.index, m.index + 900));
     add({
       id,
-      title: matchField(win, ['title', 'name', 'subject']),
+      title: matchFieldNear(win, ['title', 'name', 'subject'], center),
       price,
       region,
       url: absolutize(href),
