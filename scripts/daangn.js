@@ -39,9 +39,14 @@ const USER_AGENT =
  * @param {string} keyword
  * @returns {Promise<string>} HTML 문자열
  */
-async function fetchSearchHtml(keyword) {
+async function fetchSearchHtml(keyword, region) {
   const template = process.env.DAANGN_SEARCH_URL || DEFAULT_SEARCH_URL;
-  const url = template.replace('{kw}', encodeURIComponent(keyword));
+  let url = template.replace('{kw}', encodeURIComponent(keyword));
+  // 당근 웹 검색은 위치 인식이 안 돼 기본 지역(서초동) 결과만 준다.
+  // watch.daangnRegion(예: "매탄3동-6543")을 in= 파라미터로 넣어 내 동네로 검색한다.
+  if (region) {
+    url += (url.includes('?') ? '&' : '?') + 'in=' + encodeURIComponent(region);
+  }
 
   const res = await fetch(url, {
     headers: {
@@ -354,10 +359,13 @@ function isGenericFreeKeyword(watch) {
   return /^(?:나눔|무료나눔|무료)$/.test(normalize(watch && watch.keyword));
 }
 
-function matchesWatch(item, watch) {
+function matchesWatch(item, watch, opts) {
   // 무료 모드에서 이 세 단어는 제품명이 아니라 "모든 무료 매물" 검색으로 취급한다.
   if (!isGenericFreeKeyword(watch) && !keywordMatches(item.title, watch.keyword)) return false;
   if (!priceWithinMax(item, watch)) return false;
+
+  // 검색 자체가 특정 동네로 스코프된 경우(당근 in= 지역검색) 지역 필터를 건너뛴다.
+  if (opts && opts.skipLocation) return true;
 
   if (isNationwide(watch.location)) return true; // 지역 미입력 → 전국
 
@@ -382,45 +390,17 @@ function matchesWatch(item, watch) {
  * @param {{keyword:string,location:string}} watch
  * @returns {Promise<Array>} 조건을 만족하는 매물 목록
  */
-let _regionProbed = false;
-async function discoverDaangnRegion() {
-  if (_regionProbed) return;
-  _regionProbed = true;
-  try {
-    const html = await fetchSearchHtml('화분');
-    const sig = (re) => [...new Set(html.match(re) || [])].slice(0, 6);
-    console.log('    [RGN] in= 신호:', JSON.stringify(sig(/[?&]in=[^"'&\\\s]{2,40}/g)));
-    console.log('    [RGN] regionId 신호:', JSON.stringify(sig(/region[_A-Za-z]*[Ii]d["'\\:\s]{1,4}\d{2,}/g)));
-    console.log('    [RGN] region api:', JSON.stringify(sig(/https?:\/\/[a-z0-9.-]*(?:karrot|daangn)[a-z0-9.-]*\/[^"'\\\s]*regio[^"'\\\s]*/gi)));
-    console.log('    [RGN] 서초 주변:', JSON.stringify(sig(/서초[0-9]?동[^,"'}]{0,40}/g)));
-  } catch (e) {
-    console.log('    [RGN] 실패:', e.message);
-  }
-  // 지역검색 API 후보 (매탄동 → 지역코드)
-  for (const url of [
-    'https://www.daangn.com/kr/region-search/?query=%EB%A7%A4%ED%83%84%EB%8F%99',
-    'https://www.daangn.com/kr/region/?query=%EB%A7%A4%ED%83%84%EB%8F%99',
-    'https://api.daangn.com/api/v1/regions?query=%EB%A7%A4%ED%83%84%EB%8F%99',
-  ]) {
-    try {
-      const r = await fetch(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json,text/html,*/*' } });
-      const txt = await r.text();
-      console.log(`    [RGN] ${url.replace('https://','').slice(0,45)} → HTTP ${r.status}, ${txt.length}자, ${txt.slice(0,120).replace(/\s+/g,' ')}`);
-    } catch (e) {
-      console.log(`    [RGN] ${url.slice(0,45)} 실패: ${e.message}`);
-    }
-  }
-}
-
 async function searchDaangn(watch) {
-  if (process.env.DEBUG === 'true') await discoverDaangnRegion();
-  const html = await fetchSearchHtml(watch.keyword);
+  const html = await fetchSearchHtml(watch.keyword, watch.daangnRegion);
   const items = parseItems(html);
-  const matched = items.filter((it) => matchesWatch(it, watch));
+  // daangnRegion 이 있으면 검색이 이미 해당 동네로 한정되므로 지역 필터를 건너뛴다.
+  const skipLocation = !!watch.daangnRegion;
+  const matched = items.filter((it) => matchesWatch(it, watch, { skipLocation }));
 
   if (process.env.DEBUG === 'true') {
     console.log(
       `    [DEBUG] HTML ${html.length}자, 파싱된 매물 ${items.length}건, 매칭 ${matched.length}건` +
+        (watch.daangnRegion ? ` (in=${watch.daangnRegion})` : '') +
         (isNationwide(watch.location) ? ' (전국 검색)' : '')
     );
     // 매물 링크가 페이지에 몇 번 등장하는지(파서와 무관한 원자료 신호)
