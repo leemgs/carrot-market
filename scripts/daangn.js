@@ -362,12 +362,15 @@ function matchesWatch(item, watch) {
   if (isNationwide(watch.location)) return true; // 지역 미입력 → 전국
 
   const hay = normalize(`${item.region} ${item.title}`);
+  // 당근 등은 행정동(매탄3동)으로 표기하지만 지역 데이터는 법정동(매탄동)이라
+  // 동/가/읍/면 앞 숫자를 제거한 버전도 함께 비교한다. (매탄3동 → 매탄동)
+  const hayDong = hay.replace(/([가-힣])\d+(동|가|읍|면)/g, '$1$2');
   const variants = locationVariants(watch.location);
-  if (variants.some((v) => hay.includes(v))) return true;
+  if (variants.some((v) => hay.includes(v) || hayDong.includes(v))) return true;
 
   // 시/구 단위 입력 → 그 안의 동 이름이 매물 지역/제목에 있으면 매칭
   for (const d of dongsForLocation(watch.location)) {
-    if (d.length >= 2 && hay.includes(d)) return true;
+    if (d.length >= 2 && (hay.includes(d) || hayDong.includes(d))) return true;
   }
 
   if (!item.region && process.env.STRICT_REGION === 'false') return true;
