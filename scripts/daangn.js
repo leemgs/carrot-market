@@ -382,7 +382,38 @@ function matchesWatch(item, watch) {
  * @param {{keyword:string,location:string}} watch
  * @returns {Promise<Array>} 조건을 만족하는 매물 목록
  */
+let _regionProbed = false;
+async function discoverDaangnRegion() {
+  if (_regionProbed) return;
+  _regionProbed = true;
+  try {
+    const html = await fetchSearchHtml('화분');
+    const sig = (re) => [...new Set(html.match(re) || [])].slice(0, 6);
+    console.log('    [RGN] in= 신호:', JSON.stringify(sig(/[?&]in=[^"'&\\\s]{2,40}/g)));
+    console.log('    [RGN] regionId 신호:', JSON.stringify(sig(/region[_A-Za-z]*[Ii]d["'\\:\s]{1,4}\d{2,}/g)));
+    console.log('    [RGN] region api:', JSON.stringify(sig(/https?:\/\/[a-z0-9.-]*(?:karrot|daangn)[a-z0-9.-]*\/[^"'\\\s]*regio[^"'\\\s]*/gi)));
+    console.log('    [RGN] 서초 주변:', JSON.stringify(sig(/서초[0-9]?동[^,"'}]{0,40}/g)));
+  } catch (e) {
+    console.log('    [RGN] 실패:', e.message);
+  }
+  // 지역검색 API 후보 (매탄동 → 지역코드)
+  for (const url of [
+    'https://www.daangn.com/kr/region-search/?query=%EB%A7%A4%ED%83%84%EB%8F%99',
+    'https://www.daangn.com/kr/region/?query=%EB%A7%A4%ED%83%84%EB%8F%99',
+    'https://api.daangn.com/api/v1/regions?query=%EB%A7%A4%ED%83%84%EB%8F%99',
+  ]) {
+    try {
+      const r = await fetch(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json,text/html,*/*' } });
+      const txt = await r.text();
+      console.log(`    [RGN] ${url.replace('https://','').slice(0,45)} → HTTP ${r.status}, ${txt.length}자, ${txt.slice(0,120).replace(/\s+/g,' ')}`);
+    } catch (e) {
+      console.log(`    [RGN] ${url.slice(0,45)} 실패: ${e.message}`);
+    }
+  }
+}
+
 async function searchDaangn(watch) {
+  if (process.env.DEBUG === 'true') await discoverDaangnRegion();
   const html = await fetchSearchHtml(watch.keyword);
   const items = parseItems(html);
   const matched = items.filter((it) => matchesWatch(it, watch));
